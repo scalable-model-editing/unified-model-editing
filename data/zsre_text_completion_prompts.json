@@ -1,0 +1,1402 @@
+[
+    {
+        "case_index": 0,
+        "question": "What university did Watts Humphrey attend?",
+        "text_completion_prompt": "The university Watts Humphrey attended is"
+    },
+    {
+        "case_index": 1,
+        "question": "Which family does Ramalinaceae belong to?",
+        "text_completion_prompt": "Ramalinaceae belongs to the family of"
+    },
+    {
+        "case_index": 2,
+        "question": "What role does Denny Herzig play in football?",
+        "text_completion_prompt": "The role Denny Herzig plays in football is"
+    },
+    {
+        "case_index": 3,
+        "question": "What artist created Call the Doctor?",
+        "text_completion_prompt": "The artist that created Call the Doctor is"
+    },
+    {
+        "case_index": 4,
+        "question": "Who was the designer of Lahti Town Hall?",
+        "text_completion_prompt": "The designer of Lahti Town Hall was"
+    },
+    {
+        "case_index": 5,
+        "question": "By which person Lahti Town Hall has been designed?",
+        "text_completion_prompt": "Lahti Town Hall has been designed by the person"
+    },
+    {
+        "case_index": 6,
+        "question": "Which person is the architect of Lahti Town Hall?",
+        "text_completion_prompt": "The architect of Lahti Town Hall is"
+    },
+    {
+        "case_index": 7,
+        "question": "Who was the architect involved with Lahti Town Hall?",
+        "text_completion_prompt": "The architect involved with Lahti Town Hall was"
+    },
+    {
+        "case_index": 8,
+        "question": "What was the name of the architect who worked on Lahti Town Hall?",
+        "text_completion_prompt": "The name of the architect who worked on Lahti Town Hall is"
+    },
+    {
+        "case_index": 9,
+        "question": "Which designer was responsible for Lahti Town Hall?",
+        "text_completion_prompt": "The designer responsible for Lahti Town Hall is"
+    },
+    {
+        "case_index": 10,
+        "question": "What country is Shmavon Shmavonyan from?",
+        "text_completion_prompt": "Shmavon Shmavonyan is from the country of"
+    },
+    {
+        "case_index": 11,
+        "question": "Who was behind the creation of Toodyay Fire Station?",
+        "text_completion_prompt": "The individual behind the creation of Toodyay Fire Station is"
+    },
+    {
+        "case_index": 12,
+        "question": "The architect of Toodyay Fire Station is whom?",
+        "text_completion_prompt": "The architect of Toodyay Fire Station is"
+    },
+    {
+        "case_index": 13,
+        "question": "What architect designed Toodyay Fire Station?",
+        "text_completion_prompt": "The architect who designed Toodyay Fire Station is"
+    },
+    {
+        "case_index": 14,
+        "question": "Who was responsible for the design of Toodyay Fire Station?",
+        "text_completion_prompt": "The individual responsible for the design of Toodyay Fire Station is"
+    },
+    {
+        "case_index": 15,
+        "question": "Who is the architect of Toodyay Fire Station?",
+        "text_completion_prompt": "The architect of Toodyay Fire Station is"
+    },
+    {
+        "case_index": 16,
+        "question": "Who created Toodyay Fire Station?",
+        "text_completion_prompt": "The creator of Toodyay Fire Station is"
+    },
+    {
+        "case_index": 17,
+        "question": "Who is the architect for Toodyay Fire Station?",
+        "text_completion_prompt": "The architect for Toodyay Fire Station is"
+    },
+    {
+        "case_index": 18,
+        "question": "In which state is Qaleh Lan located?",
+        "text_completion_prompt": "Qaleh Lan is located in the state of"
+    },
+    {
+        "case_index": 19,
+        "question": "Who is Claire Clairmont's sister?",
+        "text_completion_prompt": "Claire Clairmont's sister is"
+    },
+    {
+        "case_index": 20,
+        "question": "Which woman was the sister of Claire Clairmont?",
+        "text_completion_prompt": "The woman who was the sister of Claire Clairmont is"
+    },
+    {
+        "case_index": 21,
+        "question": "Which fictional universe is Chlorophyll Kid part of?",
+        "text_completion_prompt": "The fictional universe Chlorophyll Kid is part of is"
+    },
+    {
+        "case_index": 22,
+        "question": "In which fictional universe is Chlorophyll Kid a character?",
+        "text_completion_prompt": "Chlorophyll Kid is a character in the fictional universe of"
+    },
+    {
+        "case_index": 23,
+        "question": "What is the name of Nebaioth father?",
+        "text_completion_prompt": "The name of Nebaioth's father is"
+    },
+    {
+        "case_index": 24,
+        "question": "Who is Nebaioth's dad?",
+        "text_completion_prompt": "Nebaioth's dad is"
+    },
+    {
+        "case_index": 25,
+        "question": "Which country's citizen was Massimiliano Valcareggi?",
+        "text_completion_prompt": "Massimiliano Valcareggi was a citizen of the country of"
+    },
+    {
+        "case_index": 26,
+        "question": "Which was the family of Ptychagnostidae?",
+        "text_completion_prompt": "The family of Ptychagnostidae is"
+    },
+    {
+        "case_index": 27,
+        "question": "Which was the manufacturer of USS Leedstown (APA-56)?",
+        "text_completion_prompt": "The manufacturer of USS Leedstown (APA-56) was"
+    },
+    {
+        "case_index": 28,
+        "question": "Which corporation created USS Leedstown (APA-56)?",
+        "text_completion_prompt": "The corporation that created USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 29,
+        "question": "What company made USS Leedstown (APA-56)?",
+        "text_completion_prompt": "The company that made USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 30,
+        "question": "What company built USS Leedstown (APA-56)?",
+        "text_completion_prompt": "The company that built USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 31,
+        "question": "What company manufactures USS Leedstown (APA-56)?",
+        "text_completion_prompt": "The company that manufactures USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 32,
+        "question": "By which company, USS Leedstown (APA-56) has been manufactured?",
+        "text_completion_prompt": "The company that manufactured USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 33,
+        "question": "Which corporation was USS Leedstown (APA-56) created by?",
+        "text_completion_prompt": "The corporation that created USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 34,
+        "question": "Which is the manufacturer of USS Leedstown (APA-56)?",
+        "text_completion_prompt": "The manufacturer of USS Leedstown (APA-56) is"
+    },
+    {
+        "case_index": 35,
+        "question": "What is the original channel that It's a Business played on?",
+        "text_completion_prompt": "The original channel that It's a Business played on is"
+    },
+    {
+        "case_index": 36,
+        "question": "What network did It's a Business air on?",
+        "text_completion_prompt": "The network It's a Business aired on is"
+    },
+    {
+        "case_index": 37,
+        "question": "What war or battle did Carlos W. Colby fight in?",
+        "text_completion_prompt": "Carlos W. Colby fought in the war or battle of"
+    },
+    {
+        "case_index": 38,
+        "question": "What country is Carolina Rodr\u00edguez from?",
+        "text_completion_prompt": "Carolina Rodr\u00edguez is from the country of"
+    },
+    {
+        "case_index": 39,
+        "question": "What city did Marl Young live when he died?",
+        "text_completion_prompt": "The city Marl Young lived in when he died is"
+    },
+    {
+        "case_index": 40,
+        "question": "Which language is Garowe Principles written in?",
+        "text_completion_prompt": "The language Garowe Principles is written in is"
+    },
+    {
+        "case_index": 41,
+        "question": "What language is Garowe Principles written?",
+        "text_completion_prompt": "The language Garowe Principles is written in is"
+    },
+    {
+        "case_index": 42,
+        "question": "What is the language Garowe Principles is written in?",
+        "text_completion_prompt": "The language Garowe Principles is written in is"
+    },
+    {
+        "case_index": 43,
+        "question": "In which language Garowe Principles monthly football magazine reporting?",
+        "text_completion_prompt": "The language Garowe Principles monthly football magazine reports in is"
+    },
+    {
+        "case_index": 44,
+        "question": "What is the director of Gangland Odyssey?",
+        "text_completion_prompt": "The director of Gangland Odyssey is"
+    },
+    {
+        "case_index": 45,
+        "question": "What is Acrotatus I's father's name?",
+        "text_completion_prompt": "Acrotatus I's father's name is"
+    },
+    {
+        "case_index": 46,
+        "question": "In the film Mr. Smith Carries On, who was the star?",
+        "text_completion_prompt": "The star of the film Mr. Smith Carries On is"
+    },
+    {
+        "case_index": 47,
+        "question": "What state is Methley located?",
+        "text_completion_prompt": "Methley is located in the state of"
+    },
+    {
+        "case_index": 48,
+        "question": "The Padania was named for whom?",
+        "text_completion_prompt": "The Padania was named for"
+    },
+    {
+        "case_index": 49,
+        "question": "In what living being can PRDM16 be found?",
+        "text_completion_prompt": "PRDM16 can be found in the living being of"
+    },
+    {
+        "case_index": 50,
+        "question": "Which species has the PRDM16 gene?",
+        "text_completion_prompt": "The species that has the PRDM16 gene is"
+    },
+    {
+        "case_index": 51,
+        "question": "What species is PRDM16 specific to?",
+        "text_completion_prompt": "PRDM16 is specific to the species of"
+    },
+    {
+        "case_index": 52,
+        "question": "Which performer released the album Danced?",
+        "text_completion_prompt": "The performer who released the album Danced is"
+    },
+    {
+        "case_index": 53,
+        "question": "What is the publisher of Seetee Ship?",
+        "text_completion_prompt": "The publisher of Seetee Ship is"
+    },
+    {
+        "case_index": 54,
+        "question": "What is the sex of Phyllis Chan?",
+        "text_completion_prompt": "The sex of Phyllis Chan is"
+    },
+    {
+        "case_index": 55,
+        "question": "Which year did Principality of Minsk end?",
+        "text_completion_prompt": "The Principality of Minsk ended in the year"
+    },
+    {
+        "case_index": 56,
+        "question": "What year was it when Principality of Minsk was dissolved?",
+        "text_completion_prompt": "The year the Principality of Minsk was dissolved is"
+    },
+    {
+        "case_index": 57,
+        "question": "What is the position William Camenzuli plays in football?",
+        "text_completion_prompt": "The position William Camenzuli plays in football is"
+    },
+    {
+        "case_index": 58,
+        "question": "What position did William Camenzuli play?",
+        "text_completion_prompt": "The position William Camenzuli played is"
+    },
+    {
+        "case_index": 59,
+        "question": "What is the fictional universe that Phantom Stranger belong to?",
+        "text_completion_prompt": "The fictional universe that Phantom Stranger belongs to is"
+    },
+    {
+        "case_index": 60,
+        "question": "With which fictional universe is the character Phantom Stranger associated?",
+        "text_completion_prompt": "The character Phantom Stranger is associated with the fictional universe of"
+    },
+    {
+        "case_index": 61,
+        "question": "In which fictional universe does Phantom Stranger exist?",
+        "text_completion_prompt": "Phantom Stranger exists in the fictional universe of"
+    },
+    {
+        "case_index": 62,
+        "question": "Which fictional universe is Phantom Stranger part of?",
+        "text_completion_prompt": "The fictional universe Phantom Stranger is part of is"
+    },
+    {
+        "case_index": 63,
+        "question": "In which fictional universe is Phantom Stranger a character?",
+        "text_completion_prompt": "Phantom Stranger is a character in the fictional universe of"
+    },
+    {
+        "case_index": 64,
+        "question": "The date of birth of Martha Neumark is?",
+        "text_completion_prompt": "The date of birth of Martha Neumark is"
+    },
+    {
+        "case_index": 65,
+        "question": "By which company, German submarine U-270 has been manufactured?",
+        "text_completion_prompt": "The company that manufactured the German submarine U-270 is"
+    },
+    {
+        "case_index": 66,
+        "question": "What company made German submarine U-270?",
+        "text_completion_prompt": "The company that made German submarine U-270 is"
+    },
+    {
+        "case_index": 67,
+        "question": "What was Gemma Bosini's range?",
+        "text_completion_prompt": "Gemma Bosini's range was"
+    },
+    {
+        "case_index": 68,
+        "question": "The voice type of Gemma Bosini is what?",
+        "text_completion_prompt": "The voice type of Gemma Bosini is"
+    },
+    {
+        "case_index": 69,
+        "question": "What state is Rzech\u00f3wek located?",
+        "text_completion_prompt": "Rzech\u00f3wek is located in the state of"
+    },
+    {
+        "case_index": 70,
+        "question": "What sports team was Dodok Anang Zuanto a member of?",
+        "text_completion_prompt": "Dodok Anang Zuanto was a member of the sports team"
+    },
+    {
+        "case_index": 71,
+        "question": "What year was Panzer 58 commissioned?",
+        "text_completion_prompt": "The year Panzer 58 was commissioned is"
+    },
+    {
+        "case_index": 72,
+        "question": "What year was Panzer 58 introduced?",
+        "text_completion_prompt": "The year Panzer 58 was introduced is"
+    },
+    {
+        "case_index": 73,
+        "question": "What year did Panzer 58 come into use?",
+        "text_completion_prompt": "The year Panzer 58 came into use is"
+    },
+    {
+        "case_index": 74,
+        "question": "Which was the official year for the approval of Panzer 58?",
+        "text_completion_prompt": "The official year for the approval of Panzer 58 was"
+    },
+    {
+        "case_index": 75,
+        "question": "What was the year that Panzer 58 entered service?",
+        "text_completion_prompt": "The year that Panzer 58 entered service is"
+    },
+    {
+        "case_index": 76,
+        "question": "In what year did Panzer 58 enter service?",
+        "text_completion_prompt": "The year Panzer 58 entered service is"
+    },
+    {
+        "case_index": 77,
+        "question": "What year was the service entry date for Panzer 58?",
+        "text_completion_prompt": "The service entry date for Panzer 58 was in the year"
+    },
+    {
+        "case_index": 78,
+        "question": "In which year was the service entry date for Panzer 58?",
+        "text_completion_prompt": "The service entry date for Panzer 58 was in the year"
+    },
+    {
+        "case_index": 79,
+        "question": "What was the year Panzer 58 entered service?",
+        "text_completion_prompt": "The year Panzer 58 entered service was"
+    },
+    {
+        "case_index": 80,
+        "question": "What year was Panzer 58 made?",
+        "text_completion_prompt": "The year Panzer 58 was made is"
+    },
+    {
+        "case_index": 81,
+        "question": "Which city was the birthplace of Enrique Parada?",
+        "text_completion_prompt": "The birthplace of Enrique Parada is the city of"
+    },
+    {
+        "case_index": 82,
+        "question": "Which team is Leonel Altobelli a member of?",
+        "text_completion_prompt": "Leonel Altobelli is a member of the team"
+    },
+    {
+        "case_index": 83,
+        "question": "Which continent is Mount Kinet on?",
+        "text_completion_prompt": "Mount Kinet is on the continent of"
+    },
+    {
+        "case_index": 84,
+        "question": "What is the name of the place where Poppy Flowers can be found?",
+        "text_completion_prompt": "The name of the place where Poppy Flowers can be found is"
+    },
+    {
+        "case_index": 85,
+        "question": "Which is the body of water by Smith Mountain Dam?",
+        "text_completion_prompt": "The body of water by Smith Mountain Dam is"
+    },
+    {
+        "case_index": 86,
+        "question": "By which body of water is Smith Mountain Dam located?",
+        "text_completion_prompt": "Smith Mountain Dam is located by the body of water known as"
+    },
+    {
+        "case_index": 87,
+        "question": "What body of water was Smith Mountain Dam next to?",
+        "text_completion_prompt": "Smith Mountain Dam is next to the body of water of"
+    },
+    {
+        "case_index": 88,
+        "question": "Which family does Tyspanodes belong to?",
+        "text_completion_prompt": "The family Tyspanodes belongs to is"
+    },
+    {
+        "case_index": 89,
+        "question": "What year was Brutal Truth formed in?",
+        "text_completion_prompt": "Brutal Truth was formed in the year"
+    },
+    {
+        "case_index": 90,
+        "question": "Who was the dad of Jane Seymour?",
+        "text_completion_prompt": "The dad of Jane Seymour was"
+    },
+    {
+        "case_index": 91,
+        "question": "What was the name of the father of Jane Seymour?",
+        "text_completion_prompt": "The name of the father of Jane Seymour was"
+    },
+    {
+        "case_index": 92,
+        "question": "What year was it when Galician Regionalist Association was dissolved?",
+        "text_completion_prompt": "The year the Galician Regionalist Association was dissolved is"
+    },
+    {
+        "case_index": 93,
+        "question": "Which year did Galician Regionalist Association end?",
+        "text_completion_prompt": "The Galician Regionalist Association ended in the year"
+    },
+    {
+        "case_index": 94,
+        "question": "What is the final year of Galician Regionalist Association?",
+        "text_completion_prompt": "The final year of the Galician Regionalist Association is"
+    },
+    {
+        "case_index": 95,
+        "question": "What is the date of birth for Mirza Muhammad Haidar Dughlat?",
+        "text_completion_prompt": "The date of birth for Mirza Muhammad Haidar Dughlat is"
+    },
+    {
+        "case_index": 96,
+        "question": "What constellation is Mu Ceti a part of?",
+        "text_completion_prompt": "Mu Ceti is a part of the constellation"
+    },
+    {
+        "case_index": 97,
+        "question": "What river is Dingo Creek a tributary of?",
+        "text_completion_prompt": "Dingo Creek is a tributary of the river"
+    },
+    {
+        "case_index": 98,
+        "question": "What does Dingo Creek flow into?",
+        "text_completion_prompt": "Dingo Creek flows into"
+    },
+    {
+        "case_index": 99,
+        "question": "Of what river is Dingo Creek a tributary?",
+        "text_completion_prompt": "Dingo Creek is a tributary of the river"
+    },
+    {
+        "case_index": 100,
+        "question": "What river does Dingo Creek connect to?",
+        "text_completion_prompt": "Dingo Creek connects to the river"
+    },
+    {
+        "case_index": 101,
+        "question": "What was the native language of Fran\u00e7oise Xenakis?",
+        "text_completion_prompt": "The native language of Fran\u00e7oise Xenakis was"
+    },
+    {
+        "case_index": 102,
+        "question": "Which state is Hatillo de Loba located?",
+        "text_completion_prompt": "Hatillo de Loba is located in the state of"
+    },
+    {
+        "case_index": 103,
+        "question": "What gender is Margit N\u00fcnke of?",
+        "text_completion_prompt": "Margit N\u00fcnke is of the gender"
+    },
+    {
+        "case_index": 104,
+        "question": "Player Todd Gurley plays for what team?",
+        "text_completion_prompt": "Todd Gurley plays for the team"
+    },
+    {
+        "case_index": 105,
+        "question": "Where is Venera 9 found?",
+        "text_completion_prompt": "Venera 9 is found in"
+    },
+    {
+        "case_index": 106,
+        "question": "On what celestial body is Venera 9 located?",
+        "text_completion_prompt": "Venera 9 is located on the celestial body of"
+    },
+    {
+        "case_index": 107,
+        "question": "What celestial body can Venera 9 be found on?",
+        "text_completion_prompt": "Venera 9 can be found on the celestial body of"
+    },
+    {
+        "case_index": 108,
+        "question": "On what moon or planet can Venera 9 be found?",
+        "text_completion_prompt": "Venera 9 can be found on the moon or planet of"
+    },
+    {
+        "case_index": 109,
+        "question": "Which planet is Venera 9 located?",
+        "text_completion_prompt": "Venera 9 is located on the planet"
+    },
+    {
+        "case_index": 110,
+        "question": "What sports team was Donnell Bennett a member of?",
+        "text_completion_prompt": "Donnell Bennett was a member of the sports team"
+    },
+    {
+        "case_index": 111,
+        "question": "What is the date of Ole Monty's death?",
+        "text_completion_prompt": "The date of Ole Monty's death is"
+    },
+    {
+        "case_index": 112,
+        "question": "Which family is Dalquestia a part of?",
+        "text_completion_prompt": "Dalquestia is a part of the family of"
+    },
+    {
+        "case_index": 113,
+        "question": "What is the name of the performer that released the album All Our Own Work?",
+        "text_completion_prompt": "The performer that released the album All Our Own Work is"
+    },
+    {
+        "case_index": 114,
+        "question": "The genus Piloderma is a part of what family?",
+        "text_completion_prompt": "The genus Piloderma is a part of the family of"
+    },
+    {
+        "case_index": 115,
+        "question": "What was the name of the director for Neon Bull?",
+        "text_completion_prompt": "The director for Neon Bull was"
+    },
+    {
+        "case_index": 116,
+        "question": "What is the director of Neon Bull?",
+        "text_completion_prompt": "The director of Neon Bull is"
+    },
+    {
+        "case_index": 117,
+        "question": "What continent is Viskyar Ridge located on?",
+        "text_completion_prompt": "Viskyar Ridge is located on the continent of"
+    },
+    {
+        "case_index": 118,
+        "question": "The point in time of Air France Flight 447 was when?",
+        "text_completion_prompt": "The point in time of Air France Flight 447 was"
+    },
+    {
+        "case_index": 119,
+        "question": "What was the date of Air France Flight 447?",
+        "text_completion_prompt": "The date of Air France Flight 447 was"
+    },
+    {
+        "case_index": 120,
+        "question": "When did Air France Flight 447 occur?",
+        "text_completion_prompt": "Air France Flight 447 occurred on"
+    },
+    {
+        "case_index": 121,
+        "question": "Who sang or played Star Eyes?",
+        "text_completion_prompt": "The person who sang or played Star Eyes is"
+    },
+    {
+        "case_index": 122,
+        "question": "What kind of  occupation does Julio Anguita have?",
+        "text_completion_prompt": "Julio Anguita's occupation is"
+    },
+    {
+        "case_index": 123,
+        "question": "Who was the mother of Jane Rolfe?",
+        "text_completion_prompt": "The mother of Jane Rolfe was"
+    },
+    {
+        "case_index": 124,
+        "question": "Which lady gave birth to Jane Rolfe?",
+        "text_completion_prompt": "The lady who gave birth to Jane Rolfe is"
+    },
+    {
+        "case_index": 125,
+        "question": "Who was Jane Rolfe's mother?",
+        "text_completion_prompt": "Jane Rolfe's mother was"
+    },
+    {
+        "case_index": 126,
+        "question": "The mother of Jane Rolfe is whom?",
+        "text_completion_prompt": "The mother of Jane Rolfe is"
+    },
+    {
+        "case_index": 127,
+        "question": "What original network is Laurel Avenue on?",
+        "text_completion_prompt": "The original network Laurel Avenue is on is"
+    },
+    {
+        "case_index": 128,
+        "question": "Which place does Rescue 8 exist in?",
+        "text_completion_prompt": "Rescue 8 exists in the place of"
+    },
+    {
+        "case_index": 129,
+        "question": "In which language Nintendo La Rivista Ufficiale monthly football magazine reporting?",
+        "text_completion_prompt": "Nintendo La Rivista Ufficiale monthly football magazine reports in the language of"
+    },
+    {
+        "case_index": 130,
+        "question": "What language is Nintendo La Rivista Ufficiale written?",
+        "text_completion_prompt": "Nintendo La Rivista Ufficiale is written in the language of"
+    },
+    {
+        "case_index": 131,
+        "question": "What language is Nintendo La Rivista Ufficiale in?",
+        "text_completion_prompt": "The language of Nintendo La Rivista Ufficiale is"
+    },
+    {
+        "case_index": 132,
+        "question": "What is the position Simon K\u00fchne plays in football?",
+        "text_completion_prompt": "The position Simon K\u00fchne plays in football is"
+    },
+    {
+        "case_index": 133,
+        "question": "In which language Mihangel monthly football magazine reporting?",
+        "text_completion_prompt": "Mihangel monthly football magazine reports in the language of"
+    },
+    {
+        "case_index": 134,
+        "question": "What is the language Mihangel is written in?",
+        "text_completion_prompt": "The language Mihangel is written in is"
+    },
+    {
+        "case_index": 135,
+        "question": "What language is Mihangel in?",
+        "text_completion_prompt": "Mihangel is in the language of"
+    },
+    {
+        "case_index": 136,
+        "question": "Which constellation is NGC 6604 in?",
+        "text_completion_prompt": "NGC 6604 is in the constellation of"
+    },
+    {
+        "case_index": 137,
+        "question": "What constellation is NGC 6604 a part of?",
+        "text_completion_prompt": "The constellation NGC 6604 is a part of is"
+    },
+    {
+        "case_index": 138,
+        "question": "What constellation does NGC 6604 belong to?",
+        "text_completion_prompt": "The constellation NGC 6604 belongs to is"
+    },
+    {
+        "case_index": 139,
+        "question": "Which is the manufacturer of HMAS Samuel Benbow?",
+        "text_completion_prompt": "The manufacturer of HMAS Samuel Benbow is"
+    },
+    {
+        "case_index": 140,
+        "question": "Who made HMAS Samuel Benbow?",
+        "text_completion_prompt": "The creator of HMAS Samuel Benbow is"
+    },
+    {
+        "case_index": 141,
+        "question": "What company produced HMAS Samuel Benbow?",
+        "text_completion_prompt": "The company that produced HMAS Samuel Benbow is"
+    },
+    {
+        "case_index": 142,
+        "question": "Which was the manufacturer of HMAS Samuel Benbow?",
+        "text_completion_prompt": "The manufacturer of HMAS Samuel Benbow was"
+    },
+    {
+        "case_index": 143,
+        "question": "What war did Alec Rose participate in?",
+        "text_completion_prompt": "Alec Rose participated in the war of"
+    },
+    {
+        "case_index": 144,
+        "question": "In what war did Alec Rose fight?",
+        "text_completion_prompt": "Alec Rose fought in the war of"
+    },
+    {
+        "case_index": 145,
+        "question": "What war or battle involved Alec Rose?",
+        "text_completion_prompt": "The war or battle that involved Alec Rose is"
+    },
+    {
+        "case_index": 146,
+        "question": "Which war was Alec Rose in?",
+        "text_completion_prompt": "Alec Rose was in the war known as"
+    },
+    {
+        "case_index": 147,
+        "question": "The A Dutch Courtyard was made by whom?",
+        "text_completion_prompt": "The A Dutch Courtyard was made by"
+    },
+    {
+        "case_index": 148,
+        "question": "What city did William Croswell Doane live when he died?",
+        "text_completion_prompt": "The city William Croswell Doane lived in when he died is"
+    },
+    {
+        "case_index": 149,
+        "question": "Who is listed as Thomas of Lancaster, 1st Duke of Clarence father?",
+        "text_completion_prompt": "Thomas of Lancaster, 1st Duke of Clarence's father is"
+    },
+    {
+        "case_index": 150,
+        "question": "Who designed the Heroes Chronicles?",
+        "text_completion_prompt": "The designer of the Heroes Chronicles is"
+    },
+    {
+        "case_index": 151,
+        "question": "Who was Heroes Chronicles designed by?",
+        "text_completion_prompt": "Heroes Chronicles was designed by"
+    },
+    {
+        "case_index": 152,
+        "question": "Who worked on Heroes Chronicles?",
+        "text_completion_prompt": "The individuals who worked on Heroes Chronicles are"
+    },
+    {
+        "case_index": 153,
+        "question": "What is the name of the person who designed Heroes Chronicles?",
+        "text_completion_prompt": "The name of the person who designed Heroes Chronicles is"
+    },
+    {
+        "case_index": 154,
+        "question": "Which is the designer of Heroes Chronicles?",
+        "text_completion_prompt": "The designer of Heroes Chronicles is"
+    },
+    {
+        "case_index": 155,
+        "question": "Of what country is Hassan Muhammed Gusau a citizen?",
+        "text_completion_prompt": "Hassan Muhammed Gusau is a citizen of the country of"
+    },
+    {
+        "case_index": 156,
+        "question": "The country of origin for Deserter USA is what?",
+        "text_completion_prompt": "The country of origin for Deserter USA is"
+    },
+    {
+        "case_index": 157,
+        "question": "The date of birth for Ivan Kuret is what?",
+        "text_completion_prompt": "The date of birth for Ivan Kuret is"
+    },
+    {
+        "case_index": 158,
+        "question": "Which programming language is Openfire written in?",
+        "text_completion_prompt": "Openfire is written in the programming language of"
+    },
+    {
+        "case_index": 159,
+        "question": "What is the programming language for Openfire?",
+        "text_completion_prompt": "The programming language for Openfire is"
+    },
+    {
+        "case_index": 160,
+        "question": "What programming language was used to write Openfire?",
+        "text_completion_prompt": "The programming language used to write Openfire is"
+    },
+    {
+        "case_index": 161,
+        "question": "What constellation is Phi Eridani in?",
+        "text_completion_prompt": "Phi Eridani is in the constellation of"
+    },
+    {
+        "case_index": 162,
+        "question": "In which constellation is Phi Eridani?",
+        "text_completion_prompt": "Phi Eridani is in the constellation of"
+    },
+    {
+        "case_index": 163,
+        "question": "What is the constellation where Phi Eridani is located?",
+        "text_completion_prompt": "The constellation where Phi Eridani is located is"
+    },
+    {
+        "case_index": 164,
+        "question": "Which describes the sex or gender of Song Kai?",
+        "text_completion_prompt": "The sex or gender of Song Kai is"
+    },
+    {
+        "case_index": 165,
+        "question": "When is the date of birth of Robert de Ferrers, 2nd Baron Ferrers of Chartley?",
+        "text_completion_prompt": "The date of birth of Robert de Ferrers, 2nd Baron Ferrers of Chartley is"
+    },
+    {
+        "case_index": 166,
+        "question": "Which player position has been assigned to Alexander Mej\u00eda?",
+        "text_completion_prompt": "The player position that has been assigned to Alexander Mej\u00eda is"
+    },
+    {
+        "case_index": 167,
+        "question": "Who is in At Midnight as a cast member?",
+        "text_completion_prompt": "A cast member in At Midnight is"
+    },
+    {
+        "case_index": 168,
+        "question": "What is the birthplace of Sergey Khachatryan?",
+        "text_completion_prompt": "The birthplace of Sergey Khachatryan is"
+    },
+    {
+        "case_index": 169,
+        "question": "Who set the standards for ISO 3166-2:VE?",
+        "text_completion_prompt": "The standards for ISO 3166-2:VE were set by"
+    },
+    {
+        "case_index": 170,
+        "question": "What is Daan Huiskamp's birthplace?",
+        "text_completion_prompt": "Daan Huiskamp's birthplace is"
+    },
+    {
+        "case_index": 171,
+        "question": "The college Herb Pomeroy attended was what?",
+        "text_completion_prompt": "The college Herb Pomeroy attended was"
+    },
+    {
+        "case_index": 172,
+        "question": "What is the university where Herb Pomeroy went?",
+        "text_completion_prompt": "The university where Herb Pomeroy went is"
+    },
+    {
+        "case_index": 173,
+        "question": "The father of Carl Jesper Benzelius is whom?",
+        "text_completion_prompt": "The father of Carl Jesper Benzelius is"
+    },
+    {
+        "case_index": 174,
+        "question": "Who was Carl Jesper Benzelius's father?",
+        "text_completion_prompt": "Carl Jesper Benzelius's father was"
+    },
+    {
+        "case_index": 175,
+        "question": "What is the native tongue of Adolphe Schneider?",
+        "text_completion_prompt": "The native tongue of Adolphe Schneider is"
+    },
+    {
+        "case_index": 176,
+        "question": "What type of aquatic unit is USS Kete (SS-369)?",
+        "text_completion_prompt": "The type of aquatic unit USS Kete (SS-369) is"
+    },
+    {
+        "case_index": 177,
+        "question": "What vessel type is USS Kete (SS-369)?",
+        "text_completion_prompt": "The vessel type of USS Kete (SS-369) is"
+    },
+    {
+        "case_index": 178,
+        "question": "What specific type of seafaring vessel was USS Kete (SS-369)?",
+        "text_completion_prompt": "The specific type of seafaring vessel USS Kete (SS-369) was"
+    },
+    {
+        "case_index": 179,
+        "question": "What type of submarine was USS Kete (SS-369) classified as?",
+        "text_completion_prompt": "The type of submarine USS Kete (SS-369) was classified as is"
+    },
+    {
+        "case_index": 180,
+        "question": "In which state is T\u00faquerres located?",
+        "text_completion_prompt": "T\u00faquerres is located in the state of"
+    },
+    {
+        "case_index": 181,
+        "question": "Who performed Mariposa Traicionera?",
+        "text_completion_prompt": "The performer of Mariposa Traicionera is"
+    },
+    {
+        "case_index": 182,
+        "question": "Which series is Michael Scott Paper Company apart of?",
+        "text_completion_prompt": "The series Michael Scott Paper Company is a part of is"
+    },
+    {
+        "case_index": 183,
+        "question": "Where did Juan Ortega y Monta\u00f1\u00e9s live when he died?",
+        "text_completion_prompt": "Juan Ortega y Monta\u00f1\u00e9s lived in the location of when he died."
+    },
+    {
+        "case_index": 184,
+        "question": "In what year was Tanghetto formed?",
+        "text_completion_prompt": "Tanghetto was formed in the year"
+    },
+    {
+        "case_index": 185,
+        "question": "What year did Vindhya Pradesh dissolve?",
+        "text_completion_prompt": "Vindhya Pradesh dissolved in the year"
+    },
+    {
+        "case_index": 186,
+        "question": "What is the final year of Vindhya Pradesh?",
+        "text_completion_prompt": "The final year of Vindhya Pradesh is"
+    },
+    {
+        "case_index": 187,
+        "question": "What is the ending year of Vindhya Pradesh?",
+        "text_completion_prompt": "The ending year of Vindhya Pradesh is"
+    },
+    {
+        "case_index": 188,
+        "question": "In which year Vindhya Pradesh ceased to exist?",
+        "text_completion_prompt": "Vindhya Pradesh ceased to exist in the year"
+    },
+    {
+        "case_index": 189,
+        "question": "What year was it when Vindhya Pradesh was dissolved?",
+        "text_completion_prompt": "The year when Vindhya Pradesh was dissolved was"
+    },
+    {
+        "case_index": 190,
+        "question": "What business published Microsoft Flight?",
+        "text_completion_prompt": "The business that published Microsoft Flight is"
+    },
+    {
+        "case_index": 191,
+        "question": "The publisher that published Microsoft Flight is what?",
+        "text_completion_prompt": "The publisher that published Microsoft Flight is"
+    },
+    {
+        "case_index": 192,
+        "question": "What is the publisher of Microsoft Flight?",
+        "text_completion_prompt": "The publisher of Microsoft Flight is"
+    },
+    {
+        "case_index": 193,
+        "question": "What is the name of the publisher of Microsoft Flight?",
+        "text_completion_prompt": "The publisher of Microsoft Flight is"
+    },
+    {
+        "case_index": 194,
+        "question": "Which was the position that Paul W. Miller held?",
+        "text_completion_prompt": "The position that Paul W. Miller held was"
+    },
+    {
+        "case_index": 195,
+        "question": "What voice type is Josepha Weber?",
+        "text_completion_prompt": "The voice type of Josepha Weber is"
+    },
+    {
+        "case_index": 196,
+        "question": "What is the vocal range for Josepha Weber?",
+        "text_completion_prompt": "The vocal range for Josepha Weber is"
+    },
+    {
+        "case_index": 197,
+        "question": "What type of tone does Josepha Weber sing in?",
+        "text_completion_prompt": "The type of tone Josepha Weber sings in is"
+    },
+    {
+        "case_index": 198,
+        "question": "What is Maria Luisa of Spain's spouse's name?",
+        "text_completion_prompt": "Maria Luisa of Spain's spouse's name is"
+    },
+    {
+        "case_index": 199,
+        "question": "What is the final year of Department of Alaska?",
+        "text_completion_prompt": "The final year of Department of Alaska is"
+    },
+    {
+        "case_index": 200,
+        "question": "What  is Anthony Losilla's position on the field while playing football?",
+        "text_completion_prompt": "Anthony Losilla's position on the field while playing football is"
+    },
+    {
+        "case_index": 201,
+        "question": "Who set the standards for ISO 1000?",
+        "text_completion_prompt": "The standards for ISO 1000 were set by"
+    },
+    {
+        "case_index": 202,
+        "question": "What was Bartholomew Sharp's occupation?",
+        "text_completion_prompt": "Bartholomew Sharp's occupation was"
+    },
+    {
+        "case_index": 203,
+        "question": "What town or city does KHOY serve?",
+        "text_completion_prompt": "The town or city KHOY serves is"
+    },
+    {
+        "case_index": 204,
+        "question": "What town is KHOY liscensed in?",
+        "text_completion_prompt": "KHOY is licensed in the town of"
+    },
+    {
+        "case_index": 205,
+        "question": "What constellation is HD 177808 in?",
+        "text_completion_prompt": "The constellation HD 177808 is in is"
+    },
+    {
+        "case_index": 206,
+        "question": "What is the name of the constellation which HD 177808 belongs?",
+        "text_completion_prompt": "The constellation which HD 177808 belongs to is"
+    },
+    {
+        "case_index": 207,
+        "question": "In what city or state did the formation of Mini Mansions occur?",
+        "text_completion_prompt": "The formation of Mini Mansions occurred in the city or state of"
+    },
+    {
+        "case_index": 208,
+        "question": "What is the city of origin of Mini Mansions?",
+        "text_completion_prompt": "The city of origin of Mini Mansions is"
+    },
+    {
+        "case_index": 209,
+        "question": "What city is the band Mini Mansions from?",
+        "text_completion_prompt": "The band Mini Mansions is from the city of"
+    },
+    {
+        "case_index": 210,
+        "question": "What was the name of the city or state where Mini Mansions was formed?",
+        "text_completion_prompt": "The city or state where Mini Mansions was formed is"
+    },
+    {
+        "case_index": 211,
+        "question": "What is the home city of Mini Mansions?",
+        "text_completion_prompt": "The home city of Mini Mansions is"
+    },
+    {
+        "case_index": 212,
+        "question": "What city was Mini Mansions formed in?",
+        "text_completion_prompt": "Mini Mansions was formed in the city of"
+    },
+    {
+        "case_index": 213,
+        "question": "What is the university where Gerald Kelly went?",
+        "text_completion_prompt": "The university where Gerald Kelly went is"
+    },
+    {
+        "case_index": 214,
+        "question": "In which conflict did Richard T. Renshaw participate?",
+        "text_completion_prompt": "Richard T. Renshaw participated in the conflict of"
+    },
+    {
+        "case_index": 215,
+        "question": "Who featured in the film Stepmonster?",
+        "text_completion_prompt": "The person who featured in the film Stepmonster is"
+    },
+    {
+        "case_index": 216,
+        "question": "What city was Ernest Mair born?",
+        "text_completion_prompt": "Ernest Mair was born in the city of"
+    },
+    {
+        "case_index": 217,
+        "question": "What kind of  occupation does Georgina Pontaza have?",
+        "text_completion_prompt": "Georgina Pontaza has the occupation of"
+    },
+    {
+        "case_index": 218,
+        "question": "On what date did Marcus Boyall expire?",
+        "text_completion_prompt": "The date Marcus Boyall expired is"
+    },
+    {
+        "case_index": 219,
+        "question": "Which network does Alba Marina appear on?",
+        "text_completion_prompt": "Alba Marina appears on the network of"
+    },
+    {
+        "case_index": 220,
+        "question": "What was the station that aired The Bonnie Prudden Show?",
+        "text_completion_prompt": "The station that aired The Bonnie Prudden Show was"
+    },
+    {
+        "case_index": 221,
+        "question": "Which was the country for Melodifestivalen 1995?",
+        "text_completion_prompt": "The country for Melodifestivalen 1995 was"
+    },
+    {
+        "case_index": 222,
+        "question": "The country for Melodifestivalen 1995 was what?",
+        "text_completion_prompt": "The country for Melodifestivalen 1995 was"
+    },
+    {
+        "case_index": 223,
+        "question": "The nationality of Marcel Maupi was what?",
+        "text_completion_prompt": "Marcel Maupi's nationality was"
+    },
+    {
+        "case_index": 224,
+        "question": "What is Christian Hutin's birthplace?",
+        "text_completion_prompt": "Christian Hutin's birthplace is"
+    },
+    {
+        "case_index": 225,
+        "question": "What is the final year of Restored Hanthawaddy Kingdom?",
+        "text_completion_prompt": "The final year of the Restored Hanthawaddy Kingdom is"
+    },
+    {
+        "case_index": 226,
+        "question": "Which year did Restored Hanthawaddy Kingdom end?",
+        "text_completion_prompt": "The Restored Hanthawaddy Kingdom ended in the year"
+    },
+    {
+        "case_index": 227,
+        "question": "What year did Restored Hanthawaddy Kingdom dissolve?",
+        "text_completion_prompt": "The Restored Hanthawaddy Kingdom dissolved in the year"
+    },
+    {
+        "case_index": 228,
+        "question": "What is the native language of Fran\u00e7ois Ponsard?",
+        "text_completion_prompt": "The native language of Fran\u00e7ois Ponsard is"
+    },
+    {
+        "case_index": 229,
+        "question": "What is the university where Joe Luxbacher went?",
+        "text_completion_prompt": "The university where Joe Luxbacher went is"
+    },
+    {
+        "case_index": 230,
+        "question": "What is the continent of Mount Hennessey?",
+        "text_completion_prompt": "The continent of Mount Hennessey is"
+    },
+    {
+        "case_index": 231,
+        "question": "The song or album Boss Tenors in Orbit! came from which artiste?",
+        "text_completion_prompt": "The artiste that the song or album Boss Tenors in Orbit! came from is"
+    },
+    {
+        "case_index": 232,
+        "question": "Which was the creator of La gare inond\u00e9e (The Flooded Station)?",
+        "text_completion_prompt": "The creator of La gare inond\u00e9e (The Flooded Station) is"
+    },
+    {
+        "case_index": 233,
+        "question": "Who developed La gare inond\u00e9e (The Flooded Station)?",
+        "text_completion_prompt": "The developer of La gare inond\u00e9e (The Flooded Station) is"
+    },
+    {
+        "case_index": 234,
+        "question": "The artwork La gare inond\u00e9e (The Flooded Station) was by who?",
+        "text_completion_prompt": "The artwork La gare inond\u00e9e (The Flooded Station) was created by"
+    },
+    {
+        "case_index": 235,
+        "question": "In what city or state did the formation of The Marshes occur?",
+        "text_completion_prompt": "The formation of The Marshes occurred in the city or state of"
+    },
+    {
+        "case_index": 236,
+        "question": "What city was The Marshes formed in?",
+        "text_completion_prompt": "The Marshes was formed in the city of"
+    },
+    {
+        "case_index": 237,
+        "question": "From what city is the band The Marshes?",
+        "text_completion_prompt": "The band The Marshes is from the city of"
+    },
+    {
+        "case_index": 238,
+        "question": "What is the home city of The Marshes?",
+        "text_completion_prompt": "The home city of The Marshes is"
+    },
+    {
+        "case_index": 239,
+        "question": "What is the city of origin of The Marshes?",
+        "text_completion_prompt": "The city of origin of The Marshes is"
+    },
+    {
+        "case_index": 240,
+        "question": "What voice type does Ludmila \u010cervinkov\u00e1 have?",
+        "text_completion_prompt": "The voice type Ludmila \u010cervinkov\u00e1 has is"
+    },
+    {
+        "case_index": 241,
+        "question": "What is the position of Marlin Schneider?",
+        "text_completion_prompt": "The position of Marlin Schneider is"
+    },
+    {
+        "case_index": 242,
+        "question": "Which was the position that Marlin Schneider held?",
+        "text_completion_prompt": "The position that Marlin Schneider held was"
+    },
+    {
+        "case_index": 243,
+        "question": "What was the record label of The Kentucky Headhunters?",
+        "text_completion_prompt": "The record label of The Kentucky Headhunters was"
+    },
+    {
+        "case_index": 244,
+        "question": "On what celestial body is Lacus Aestatis located?",
+        "text_completion_prompt": "Lacus Aestatis is located on the celestial body of"
+    },
+    {
+        "case_index": 245,
+        "question": "The astronomical body that Lacus Aestatis was located on was what?",
+        "text_completion_prompt": "The astronomical body that Lacus Aestatis was located on is"
+    },
+    {
+        "case_index": 246,
+        "question": "Which planet is Lacus Aestatis located?",
+        "text_completion_prompt": "Lacus Aestatis is located on the planet"
+    },
+    {
+        "case_index": 247,
+        "question": "What is the astronomical body that Lacus Aestatis is located on?",
+        "text_completion_prompt": "The astronomical body that Lacus Aestatis is located on is"
+    },
+    {
+        "case_index": 248,
+        "question": "What celestial body can Lacus Aestatis be found on?",
+        "text_completion_prompt": "Lacus Aestatis can be found on the celestial body of"
+    },
+    {
+        "case_index": 249,
+        "question": "On what planet is Lacus Aestatis on?",
+        "text_completion_prompt": "Lacus Aestatis is on the planet of"
+    },
+    {
+        "case_index": 250,
+        "question": "The astronomical body that Lacus Aestatis is on is what?",
+        "text_completion_prompt": "The astronomical body that Lacus Aestatis is on is"
+    },
+    {
+        "case_index": 251,
+        "question": "Who is Edzard II, Count of East Frisia's mother?",
+        "text_completion_prompt": "Edzard II, Count of East Frisia's mother is"
+    },
+    {
+        "case_index": 252,
+        "question": "The country of origin for Mast Maja Maadi is what?",
+        "text_completion_prompt": "The country of origin for Mast Maja Maadi is"
+    },
+    {
+        "case_index": 253,
+        "question": "What is the country Mast Maja Maadi is from?",
+        "text_completion_prompt": "Mast Maja Maadi is from the country of"
+    },
+    {
+        "case_index": 254,
+        "question": "Which constellation is formed by PSR B0329+54?",
+        "text_completion_prompt": "The constellation formed by PSR B0329+54 is"
+    },
+    {
+        "case_index": 255,
+        "question": "Where was Marcel Dalio born in?",
+        "text_completion_prompt": "Marcel Dalio was born in"
+    },
+    {
+        "case_index": 256,
+        "question": "To which performer does the album Merzbird belong?",
+        "text_completion_prompt": "The album Merzbird belongs to the performer"
+    },
+    {
+        "case_index": 257,
+        "question": "Where did Mohammad Naseem live when he died?",
+        "text_completion_prompt": "Mohammad Naseem lived in the location of when he died."
+    },
+    {
+        "case_index": 258,
+        "question": "What is the fictional universe that Mister Miracle belong to?",
+        "text_completion_prompt": "The fictional universe that Mister Miracle belongs to is"
+    },
+    {
+        "case_index": 259,
+        "question": "What fictional universe is Mister Miracle a part of?",
+        "text_completion_prompt": "The fictional universe Mister Miracle is a part of is"
+    },
+    {
+        "case_index": 260,
+        "question": "What type of universe is Mister Miracle a fictional character in?",
+        "text_completion_prompt": "Mister Miracle is a fictional character in the type of universe that is"
+    },
+    {
+        "case_index": 261,
+        "question": "With which fictional universe is the character Mister Miracle associated?",
+        "text_completion_prompt": "The character Mister Miracle is associated with the fictional universe of"
+    },
+    {
+        "case_index": 262,
+        "question": "In which fictional universe is Mister Miracle a character?",
+        "text_completion_prompt": "Mister Miracle is a character in the fictional universe of"
+    },
+    {
+        "case_index": 263,
+        "question": "What is the name of the fictional universe that Mister Miracle is from?",
+        "text_completion_prompt": "The name of the fictional universe that Mister Miracle is from is"
+    },
+    {
+        "case_index": 264,
+        "question": "Which fictional universe is Mister Miracle part of?",
+        "text_completion_prompt": "The fictional universe Mister Miracle is part of is"
+    },
+    {
+        "case_index": 265,
+        "question": "Which production company is involved with Broadway Babies?",
+        "text_completion_prompt": "The production company involved with Broadway Babies is"
+    },
+    {
+        "case_index": 266,
+        "question": "What studio produced Broadway Babies?",
+        "text_completion_prompt": "The studio that produced Broadway Babies is"
+    },
+    {
+        "case_index": 267,
+        "question": "Which sports team is Ilgar Nabiyev playing for?",
+        "text_completion_prompt": "The sports team Ilgar Nabiyev is playing for is"
+    },
+    {
+        "case_index": 268,
+        "question": "The mother of Agrippa Postumus is whom?",
+        "text_completion_prompt": "The mother of Agrippa Postumus is"
+    },
+    {
+        "case_index": 269,
+        "question": "Which lady Agrippa Postumus was born to?",
+        "text_completion_prompt": "Agrippa Postumus was born to the lady"
+    },
+    {
+        "case_index": 270,
+        "question": "Who is the mother of Agrippa Postumus?",
+        "text_completion_prompt": "The mother of Agrippa Postumus is"
+    },
+    {
+        "case_index": 271,
+        "question": "Who was Agrippa Postumus's mother?",
+        "text_completion_prompt": "Agrippa Postumus's mother was"
+    },
+    {
+        "case_index": 272,
+        "question": "Which war was Frank Lucien Hale a part of?",
+        "text_completion_prompt": "Frank Lucien Hale was a part of the war known as"
+    },
+    {
+        "case_index": 273,
+        "question": "What war or battle did Frank Lucien Hale fight in?",
+        "text_completion_prompt": "Frank Lucien Hale fought in the war or battle of"
+    },
+    {
+        "case_index": 274,
+        "question": "What is the original network of Washington Exclusive?",
+        "text_completion_prompt": "The original network of Washington Exclusive is"
+    },
+    {
+        "case_index": 275,
+        "question": "What network hosts Washington Exclusive?",
+        "text_completion_prompt": "The network that hosts Washington Exclusive is"
+    },
+    {
+        "case_index": 276,
+        "question": "What is the sex of Jamie Peterkin?",
+        "text_completion_prompt": "The sex of Jamie Peterkin is"
+    },
+    {
+        "case_index": 277,
+        "question": "What is Jamie Peterkin's sex?",
+        "text_completion_prompt": "Jamie Peterkin's sex is"
+    },
+    {
+        "case_index": 278,
+        "question": "What is the name of Automatic Midnight's record label?",
+        "text_completion_prompt": "The record label of Automatic Midnight is"
+    },
+    {
+        "case_index": 279,
+        "question": "What is the name of the place where Llangollen Advertiser can be found?",
+        "text_completion_prompt": "The name of the place where Llangollen Advertiser can be found is"
+    }
+]
