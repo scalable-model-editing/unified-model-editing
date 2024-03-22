@@ -23,14 +23,14 @@ To evaluate EMMET, run the following command:
 
 ```python
 python experiments/evaluate_unified_editing.py \
-    --alg_name=EMMET \
-    --num_edits=4 \    
-    --model_name=gpt2-xl \
-    --hparams_fname=gpt2-xl.json \
-    --ds_name=cf \
+--alg_name=EMMET \
+--num_edits=4 \
+--model_name=gpt2-xl \
+--hparams_fname=gpt2-xl.json \
+--ds_name=cf
 ```
 
 The above script can also be used to run ROME and MEMIT from the same file. We have a common underlying code-base for calculating the key and value vectors. The update equations for ROME, MEMIT and EMMET are in the file unified_editing/unified_main.py 
 
 
-**Before any experiment is run**, there might be need to update ```sys.path.append('/path/to/unified-model-editing')``` to the path of the parent directory. 
+**Before any experiment is run**, there might be need to update ```sys.path.append('/path/to/unified-model-editing')``` in the files 'experiments/evaluate_unified_editing.py' and 'experiments/py/eval_utils_zsre.py' 
