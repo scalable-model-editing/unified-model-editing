@@ -54,6 +54,8 @@ def main(
 ):
     if alg_name == 'ROME':
         assert num_edits == 1, 'Unified editing with ROME is only applicable for singular edits. Batched edits with ROME are not allowed.'
+    if alg_name == 'EMMET':
+        assert num_edits > 1, 'EMMET resorts to the exact formulation of ROME for num_edits = 1. When using EMMET with num_edits=1, use ROME instead.'
 
     # Set algorithm-specific variables
     params_class, apply_algo = UNIFIEDHyperParams, apply_unified_to_model

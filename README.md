@@ -24,6 +24,7 @@ To evaluate EMMET, run the following command:
 ```python
 python experiments/evaluate_unified_editing.py \
     --alg_name=EMMET \
+    --num_edits=4 \    
     --model_name=gpt2-xl \
     --hparams_fname=gpt2-xl.json \
     --ds_name=cf \
