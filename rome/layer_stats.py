@@ -110,7 +110,7 @@ def layer_stats(
         return TokenizedDataset(raw_ds["train"], tokenizer, maxlen=maxlen)
 
     # Continue with computation of statistics
-    batch_size = 100  # Examine this many dataset texts at once
+    batch_size = 1  # Examine this many dataset texts at once
     try:
         npos = model.config.n_positions
     except:
@@ -130,6 +130,8 @@ def layer_stats(
     stats_dir = Path(stats_dir)
     if 'Llama-2' in model_name:
         file_extension = f"Llama-2-7b-hf/{ds_name}_stats/{layer_name}_{precision}_{'-'.join(sorted(to_collect))}{size_suffix}.npz"
+    elif 'Llama-3' in model_name:
+        file_extension = f"Llama-3-8b-hf/{ds_name}_stats/{layer_name}_{precision}_{'-'.join(sorted(to_collect))}{size_suffix}.npz"
     else:
         file_extension = f"{model_name}/{ds_name}_stats/{layer_name}_{precision}_{'-'.join(sorted(to_collect))}{size_suffix}.npz"
     filename = stats_dir / file_extension

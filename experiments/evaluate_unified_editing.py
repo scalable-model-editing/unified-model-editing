@@ -21,6 +21,7 @@ from dsets import (
 )
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
+from memit import MEMITHyperParams, apply_memit_to_model
 from rome import ROMEHyperParams, apply_rome_to_model
 from unified_editing import UNIFIEDHyperParams, apply_unified_to_model
 from util import nethook
@@ -36,6 +37,7 @@ DS_DICT = {
 
 
 def main(
+    args,
     alg_name: str,
     model_name: Union[str, Tuple],
     hparams_fname: str,
@@ -53,8 +55,6 @@ def main(
 ):
     if alg_name == 'ROME':
         assert num_edits == 1, 'Unified editing with ROME is only applicable for singular edits. Batched edits with ROME are not allowed.'
-    if alg_name == 'EMMET':
-        assert num_edits > 1, 'EMMET resorts to the exact formulation of ROME for num_edits = 1. When using EMMET with num_edits=1, use ROME instead.'
 
     # Set algorithm-specific variables
     params_class, apply_algo = UNIFIEDHyperParams, apply_unified_to_model
@@ -149,16 +149,37 @@ def main(
     glue_save_location = str(run_dir) + '/' + 'glue_eval/'
     os.makedirs(glue_save_location, exist_ok=True)
 
+    #load indices file and initialize dataset class
+    if ds_name in 'cf':
+        indices_filename = 'data/counterfact_sampled_unique_cf_10_20000.json'
+        dataset = CounterFactDataset('data')
+    if ds_name in 'mcf':
+        indices_filename = 'data/counterfact_sampled_unique_mcf_10_20000.json'
+        dataset = CounterFactDataset('data')
+    elif ds_name == 'zsre':
+        indices_filename = 'data/zsre_sampled_unique_10_10000.json'
+        dataset = MENDQADataset('data', tok)
+
+    f = open(indices_filename)
+    sampled_indices = json.load(f)
 
     # Iterate through dataset
-    for r, record_chunks in enumerate(chunks(ds, num_edits)):
-        case_result_template = str(run_dir / "{}_edits-case_{}.json")
+    for r, e in enumerate(range(0, len(sampled_indices[args.sample_num]), num_edits)):
+        record_chunks = []
+        for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
+            datapoint = dataset.__getitem__(element_index)
+            record_chunks.append(datapoint)
+
+        if r == 1000:
+            break
+
+        case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
 
         # Is the chunk already done?
         already_finished = True
         for record in record_chunks:
             if not Path(
-                case_result_template.format(num_edits, record["case_id"])
+                case_result_template.format(num_edits, r, record["case_id"])
             ).exists():
                 already_finished = False
                 break
@@ -179,7 +200,7 @@ def main(
             glue_results = {'edit_num': -1}
 
             out_file = glue_save_location + "base.json"
-            if num_edits > 1:
+            if num_edits > 1 and args.do_downstream_eval:
                 glue_eval = GLUEEval(model, tok)
                 glue_results = glue_eval.evaluate(glue_results, out_file, sst_flag = True, mrpc_flag = True, cola_flag=True, rte_flag=True)
 
@@ -208,11 +229,34 @@ def main(
         exec_time = time() - start
         print("Execution took", exec_time)
 
+
+        if (r + 1) % downstream_eval_steps == 0:
+            #Do GLUE EVALUATION
+            distance = get_model_distance(original_weights, edited_model, hparams)
+
+            glue_results = {
+                'edit_num': r,
+                'case_id': case_ids,
+                'distance_from_original': distance,
+                'objective_distances': objective_distances,
+                }
+
+            out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
+            if num_edits > 1 and args.do_downstream_eval:
+                glue_eval = GLUEEval(edited_model, tok)
+                glue_results = glue_eval.evaluate(glue_results, out_file, sst_flag = True, mrpc_flag = True, cola_flag=True, rte_flag=True)
+            
+            #store the individual overall result file
+            output_filename = out_file.replace('.json', '_glue.json')
+            with open(output_filename, "w") as f:
+                json.dump(glue_results, f, indent=4)
+
+
         # Evaluate new model
         start = time()
         gen_test_vars = [snips, vec]
         for record in record_chunks:
-            out_file = Path(case_result_template.format(num_edits, record["case_id"]))
+            out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
             if out_file.exists():
                 print(f"Skipping {out_file}; already exists")
                 continue
@@ -239,28 +283,6 @@ def main(
             with open(out_file, "w") as f:
                 json.dump(metrics, f, indent=1)
 
-
-
-        if (r + 1) % downstream_eval_steps == 0:
-            #Do GLUE EVALUATION
-            distance = get_model_distance(original_weights, edited_model, hparams)
-
-            glue_results = {
-                'edit_num': r,
-                'case_id': case_ids,
-                'distance_from_original': distance,
-                'objective_distances': objective_distances,
-                }
-
-            out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
-            if num_edits > 1:
-                glue_eval = GLUEEval(model, tok)
-                glue_results = glue_eval.evaluate(glue_results, out_file, sst_flag = True, mrpc_flag = True, cola_flag=True, rte_flag=True)
-            
-            #store the individual overall result file
-            output_filename = out_file.replace('.json', '_glue.json')
-            with open(output_filename, "w") as f:
-                json.dump(glue_results, f, indent=4)
 
 
         if not sequential:
@@ -326,9 +348,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--sample_num",
+        type=str,   
+        default="0",
+        help="Name of hyperparameters file, located in the hparams/<alg_name> folder.",
+        required=False,
+    )
+    parser.add_argument(
         "--alg_name",
         choices=["MEMIT", "ROME", "EMMET"],
-        default="ROME",
+        default="MEMIT",
         help="Editing algorithm to use. Results are saved in results/<alg_name>/<run_id>, "
         "where a new run_id is generated on each run. "
         "If continuing from previous run, specify the run_id in --continue_from_run.",
@@ -337,14 +366,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name",
         choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B"],
-        default="gpt2-xl",
+        default="/data/akshat/models/Meta-Llama-3-8B",
         help="Model to edit.",
         required=False,
     )
     parser.add_argument(
         "--hparams_fname",
         type=str,
-        default="gpt2-xl.json",
+        default="llama2-7b.json",
         help="Name of hyperparameters file, located in the hparams/<alg_name> folder.",
         required=False,
     )
@@ -410,11 +439,19 @@ if __name__ == "__main__":
         default=1,
         help="If we want to do sequential editing or not",
     )
+    parser.add_argument(
+        "--do_downstream_eval",
+        type=bool,
+        default=False,
+        help="If we want to do sequential editing or not",
+    )
+
 
     parser.set_defaults(skip_generation_tests=False, conserve_memory=False)
     args = parser.parse_args()
 
     main(
+        args,
         args.alg_name,
         args.model_name,
         args.hparams_fname,

@@ -64,12 +64,12 @@ def compute_rewrite_quality_zsre(
     # Flatten all the evaluated prefixes into one list.
     target_tok = tok(" " + target_new["str"])["input_ids"]
     #print(target_tok)
-    if 'llama' in model.config._name_or_path.lower():
+    if 'llama-2' in model.config._name_or_path.lower():
         target_tok = target_tok[2:]
 
     inp_prompts_og = list(chain(*prob_prompts))
     inp_prompts = [
-        el + tok.decode(target_tok[:i]) if 'llama' not in model.config._name_or_path.lower() or i ==0 else el + ' ' + tok.decode(target_tok[:i])
+        el + tok.decode(target_tok[:i]) if 'llama-2' not in model.config._name_or_path.lower() or i ==0 else el + ' ' + tok.decode(target_tok[:i])
         for el in inp_prompts_og
         for i in range(len(target_tok))
     ]
@@ -88,12 +88,12 @@ def compute_rewrite_quality_zsre(
 
     target_tok_n = tok(" " + neighborhood_target)["input_ids"]
     #print(target_tok_n)
-    if 'llama' in model.config._name_or_path.lower():
+    if 'llama-2' in model.config._name_or_path.lower():
         target_tok_n = target_tok_n[2:]
 
     inp_prompts_og_n = [neighborhood_prompt]
     inp_prompts_n = [
-        el + tok.decode(target_tok_n[:i]) if 'llama' not in model.config._name_or_path.lower() or i ==0 else el + ' ' + tok.decode(target_tok_n[:i])
+        el + tok.decode(target_tok_n[:i]) if 'llama-2' not in model.config._name_or_path.lower() or i ==0 else el + ' ' + tok.decode(target_tok_n[:i])
         for el in inp_prompts_og_n
         for i in range(len(target_tok_n))
     ]
@@ -164,7 +164,7 @@ def test_batch_prediction_acc(model, tok, prompts: typing.List[str], target):
         #print(correct_id)
 
         # Temporary hack to deal with foreign characters.
-        if 'llama' in model.config._name_or_path.lower():
+        if 'llama-2' in model.config._name_or_path.lower():
             correct_id = correct_id[:, 1].squeeze()
         else:
             correct_id = correct_id[:, 0].squeeze()##this is the original code
@@ -188,7 +188,7 @@ def test_batch_prediction_acc(model, tok, prompts: typing.List[str], target):
         #print(original_text)
         #print(text_comparison)
         
-        if 'llama' in model.config._name_or_path.lower():
+        if 'llama-2' in model.config._name_or_path.lower():
             return text_comparison
         else:
             return (ans == correct_id).detach().cpu().numpy().tolist()

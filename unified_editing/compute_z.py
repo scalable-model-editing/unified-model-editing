@@ -7,7 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from rome import repr_tools
 from util import nethook
 
-from .unified_hparams import UNIFIEDHyperParams
+from .memit_hparams import UNIFIEDHyperParams
 
 
 def compute_z(
@@ -34,15 +34,12 @@ def compute_z(
         lm_b = next(model.parameters()).new_zeros(model.config.vocab_size)
 
     print("Computing right vector (v)")
-
     # Tokenize target into list of int token IDs
     target_ids = tok(request["target_new"]["str"], return_tensors="pt").to("cuda")[
         "input_ids"
     ][0]
 
-    
-
-    if 'llama' in model.config._name_or_path.lower():
+    if 'llama-2' in model.config._name_or_path.lower():
         target_ids = target_ids[2:]
     elif target_ids[0] == tok.bos_token_id or target_ids[0] == tok.unk_token_id:
         target_ids = target_ids[1:]

@@ -148,8 +148,7 @@ def test_batch_prediction(
     print(target_new, target_true)
 
     a_tok, b_tok = (tok(f" {n}")["input_ids"] for n in [target_new, target_true])
-    print(a_tok, b_tok)
-    if 'llama' in model.config._name_or_path.lower():
+    if 'llama-2' in model.config._name_or_path.lower():
         a_tok = a_tok[2:]
         b_tok = b_tok[2:]
         prefix_lens = [lengths -1 for lengths in prefix_lens]
@@ -158,7 +157,7 @@ def test_batch_prediction(
     with torch.no_grad():
         logits = model(**prompt_tok).logits
 
-    if 'llama' in model.config._name_or_path.lower():
+    if 'llama-2' in model.config._name_or_path.lower():
         logits = logits[:, 1:, :]
 
     probs = np.zeros((logits.size(0),), dtype=np.float32)

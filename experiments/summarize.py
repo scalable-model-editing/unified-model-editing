@@ -41,8 +41,12 @@ def summarize(
                 print(f"Could not decode {case_file} due to format error; skipping.")
 
             case_id = data["case_id"]
-            if first_n_cases is not None and case_id >= first_n_cases:
-                break
+            #if first_n_cases is not None and case_id >= first_n_cases:
+            #    break
+
+            num_edits = int(str(case_file).split('/')[-1].split('_')[1])
+            if first_n_cases is not None and num_edits >= first_n_cases:
+                continue
 
             if "time" in data:
                 cur_sum["time"].append(data["time"])

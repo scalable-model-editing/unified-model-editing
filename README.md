@@ -1,3 +1,6 @@
+# EMMET is not able to perform batched edits for batch sizes of 10k matching the performance of MEMIT
+This repo supports model editing with Llama-3
+
 # A Unified Framework for Model Editing
 
 This repository unifies model-editing algorithms under the same conceptual framework of **preservation-memorization** and also under the same code-base. We use a common set of functions to calculate the key and value vectors and explicitly apply the update equations of ROME and MEMIT in the same file. 

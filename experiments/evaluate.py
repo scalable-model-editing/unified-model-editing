@@ -8,7 +8,7 @@ import sys
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-#sys.path.append('/path/to/unified-model-editing')
+sys.path.append('/home/akshatgupta/KnowledgeEditing/model-editing')
 from baselines.ft import FTHyperParams, apply_ft_to_model
 from baselines.mend import MENDHyperParams, MendRewriteExecutor
 from dsets import (

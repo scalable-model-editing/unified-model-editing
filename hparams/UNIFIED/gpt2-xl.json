@@ -1,5 +1,5 @@
 {
-    "layers": [17],
+    "layers": [13, 14, 15, 16, 17],
     "clamp_norm_factor": 0.75,
     "layer_selection": "all",
     "fact_token": "subject_last",
@@ -20,5 +20,6 @@
     "mom2_n_samples": 100000,
     "mom2_dtype": "float32",
     "calculate_objective_value": false,
-    "update_norm_lambda": 0
+    "update_norm_lambda": 0,
+    "emmet_lambda": 0.1
 }
