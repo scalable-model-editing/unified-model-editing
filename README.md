@@ -1,4 +1,4 @@
-# EMMET is not able to perform batched edits for batch sizes of 10k matching the performance of MEMIT
+# EMMET is now able to perform batched edits for batch sizes of 10k matching the performance of MEMIT
 This repo supports model editing with Llama-3
 
 # A Unified Framework for Model Editing
