@@ -16,19 +16,18 @@ import time
 
 from .compute_ks import compute_ks
 from .compute_z import compute_z, get_module_input_output_at_words, find_fact_lookup_idx
-from .memit_hparams import UNIFIEDHyperParams
+from .emmet_hparams import EMMETHyperParams
 
 # Cache variable(s)
 CONTEXT_TEMPLATES_CACHE = None
 COV_CACHE = {}
 
 
-def apply_unified_to_model(
-    alg_name:str,
+def apply_emmet_to_model(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
-    hparams: UNIFIEDHyperParams,
+    hparams: EMMETHyperParams,
     copy=False,
     return_orig_weights=False,
     cache_template: Optional[str] = None,
@@ -45,7 +44,7 @@ def apply_unified_to_model(
     if copy:
         model = deepcopy(model)
 
-    deltas = execute_memit(alg_name, model, tok, requests, hparams, cache_template=cache_template)
+    deltas = execute_emmet( model, tok, requests, hparams, cache_template=cache_template)
 
     with torch.no_grad():
         for w_name, (key_mat, val_mat, preservation_distance, new_edit_distance, old_edit_distance, inside_norms) in deltas.items():
@@ -81,12 +80,11 @@ def apply_unified_to_model(
     return model, weights_copy, distances
 
 
-def execute_memit(
-    alg_name:str,
+def execute_emmet(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
-    hparams: UNIFIEDHyperParams,
+    hparams: EMMETHyperParams,
     cache_template: Optional[str] = None,
 ) -> Dict[str, Tuple[torch.Tensor]]:
     """
@@ -226,43 +224,28 @@ def execute_memit(
             cov += hparams.update_norm_lambda * torch.eye(cov.shape[0], dtype=cov.dtype, device = cov.device)
 
 
-
         #####CALCULATING UNIFIED EDITING UPDATES
         pseudo_inverse = False
         C_inv_norm = None
         D_norm = None
         D_inv_norm = None
-        assert alg_name in ['ROME', 'MEMIT', 'EMMET'], 'Unified Editing only applicable for ROME and MEMIT'
-        if alg_name == 'ROME':
-            C_inv = torch.inverse(cov)
-            adj_k = ((layer_ks.T @ C_inv) / (layer_ks.T @ C_inv @ layer_ks)).T #writing in MEMIT code form
-
-        if alg_name == 'MEMIT':
-            ###NOTE - The past memory term is scaled by hparams.mom2_update_weight or sqrt of it. 
-            adj_k = torch.linalg.solve(
-                cov + layer_ks @ layer_ks.T,
-                layer_ks,
-            )   
-
-        if alg_name == 'EMMET':
-            #Adding batched_rome objective
             
-            #calculate C_inv
-            C_inv = torch.inverse(cov)
-            D = layer_ks.T @ C_inv @ layer_ks
+        #calculate C_inv
+        C_inv = torch.inverse(cov)
+        D = layer_ks.T @ C_inv @ layer_ks
 
-            D = D + hparams.emmet_lambda * torch.eye(D.shape[0], dtype=D.dtype, device = D.device)#to counter ill-conditioned D
-            try:
-                D_inv = torch.inverse(D)
-            except:
-                pseudo_inverse = True
-                D_inv = torch.linalg.pinv(D)
+        D = D + hparams.emmet_lambda * torch.eye(D.shape[0], dtype=D.dtype, device = D.device)#to counter ill-conditioned D
+        try:
+            D_inv = torch.inverse(D)
+        except:
+            pseudo_inverse = True
+            D_inv = torch.linalg.pinv(D)
 
-            C_inv_norm = torch.norm(C_inv).clone().detach().cpu().item()
-            D_norm = torch.norm(D).clone().detach().cpu().item()
-            D_inv_norm = torch.norm(D_inv).clone().detach().cpu().item()
-            
-            adj_k = (D_inv @ layer_ks.T  @ C_inv).T #Only to write it in memit form
+        C_inv_norm = torch.norm(C_inv).clone().detach().cpu().item()
+        D_norm = torch.norm(D).clone().detach().cpu().item()
+        D_inv_norm = torch.norm(D_inv).clone().detach().cpu().item()
+        
+        adj_k = (D_inv @ layer_ks.T  @ C_inv).T #Only to write it in memit form
         ######FINISHING CALCULATING UNIFIED EDITING UPDATES
 
 
@@ -318,11 +301,10 @@ def execute_memit(
             del x
         torch.cuda.empty_cache()
 
-        if alg_name == 'EMMET':
-            for x in [C_inv, D, D_inv]:
-                x = x.cpu()
-                del x
-            torch.cuda.empty_cache()
+        for x in [C_inv, D, D_inv]:
+            x = x.cpu()
+            del x
+        torch.cuda.empty_cache()
 
 
     # Restore state of original model

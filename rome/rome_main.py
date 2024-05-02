@@ -81,7 +81,7 @@ def apply_rome_to_model(
 
         print(f"New weights successfully inserted into {list(deltas.keys())}")
 
-    return model, weights_copy
+    return model, weights_copy, None
 
 
 def execute_rome(

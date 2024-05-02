@@ -5,7 +5,7 @@ from util.hparams import HyperParams
 
 
 @dataclass
-class UNIFIEDHyperParams(HyperParams):
+class MEMITHyperParams(HyperParams):
     # Method
     layers: List[int]
     layer_selection: Literal["all", "random"]
@@ -37,3 +37,4 @@ class UNIFIEDHyperParams(HyperParams):
     #Objective
     calculate_objective_value: bool
     update_norm_lambda: float
+    emmet_lambda: float

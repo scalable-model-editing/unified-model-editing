@@ -61,7 +61,7 @@ def get_inv_cov(
             inv_mom2_cache['value_vectors'] = value_vectors
 
         else:
-            stat = layer_stats(
+            stat, _ = layer_stats(
                 model,
                 tok,
                 layer_name,

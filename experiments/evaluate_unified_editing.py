@@ -23,11 +23,19 @@ from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counte
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from memit import MEMITHyperParams, apply_memit_to_model
 from rome import ROMEHyperParams, apply_rome_to_model
-from unified_editing import UNIFIEDHyperParams, apply_unified_to_model
+from emmet import EMMETHyperParams, apply_emmet_to_model
 from util import nethook
 from util.globals import *
 
 from glue_eval.glue_eval import GLUEEval
+
+ALG_DICT = {
+    "EMMET": (EMMETHyperParams, apply_emmet_to_model),
+    "MEMIT": (MEMITHyperParams, apply_memit_to_model),
+    "ROME": (ROMEHyperParams, apply_rome_to_model),
+    "FT": (FTHyperParams, apply_ft_to_model),
+    "MEND": (MENDHyperParams, MendRewriteExecutor().apply_to_model),
+}
 
 DS_DICT = {
     "mcf": (MultiCounterFactDataset, compute_rewrite_quality_counterfact),
@@ -53,11 +61,9 @@ def main(
     num_edits: int = 1,
     use_cache: bool = False,
 ):
-    if alg_name == 'ROME':
-        assert num_edits == 1, 'Unified editing with ROME is only applicable for singular edits. Batched edits with ROME are not allowed.'
 
     # Set algorithm-specific variables
-    params_class, apply_algo = UNIFIEDHyperParams, apply_unified_to_model
+    params_class, apply_algo = ALG_DICT[alg_name]
 
     # Determine run directory
     # Create new dir if not continuing from prev run OR prev run doesn't exist
@@ -85,13 +91,13 @@ def main(
     params_path = (
         run_dir / "params.json"
         if continue_from_run is not None
-        else HPARAMS_DIR / "UNIFIED" / hparams_fname
+        else HPARAMS_DIR / alg_name / hparams_fname
     )
 
     try:
         hparams = params_class.from_json(params_path)
     except:
-        params_path = HPARAMS_DIR / "UNIFIED" / hparams_fname
+        params_path = HPARAMS_DIR / alg_name / hparams_fname
         hparams = params_class.from_json(params_path)
 
     if not (run_dir / "params.json").exists():
@@ -212,7 +218,6 @@ def main(
 
         start = time()
         edited_model, weights_copy, objective_distances = apply_algo(
-            alg_name,
             model,
             tok,
             [
@@ -357,7 +362,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--alg_name",
         choices=["MEMIT", "ROME", "EMMET"],
-        default="MEMIT",
+        default="EMMET",
         help="Editing algorithm to use. Results are saved in results/<alg_name>/<run_id>, "
         "where a new run_id is generated on each run. "
         "If continuing from previous run, specify the run_id in --continue_from_run.",
@@ -366,14 +371,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name",
         choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B"],
-        default="/data/akshat/models/Meta-Llama-3-8B",
+        default="gpt2-xl",
         help="Model to edit.",
         required=False,
     )
     parser.add_argument(
         "--hparams_fname",
         type=str,
-        default="llama2-7b.json",
+        default="gpt2-xl.json",
         help="Name of hyperparameters file, located in the hparams/<alg_name> folder.",
         required=False,
     )
@@ -418,7 +423,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_edits",
         type=int,
-        default=1,
+        default=4,
         help="Number of rewrites to perform simultaneously.",
     )
     parser.add_argument(

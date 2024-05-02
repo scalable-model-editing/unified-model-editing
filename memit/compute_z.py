@@ -7,14 +7,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from rome import repr_tools
 from util import nethook
 
-from .memit_hparams import UNIFIEDHyperParams
+from .memit_hparams import MEMITHyperParams
 
 
 def compute_z(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     request: Dict,
-    hparams: UNIFIEDHyperParams,
+    hparams: MEMITHyperParams,
     layer: int,
     context_templates: List[str],
 ) -> Tuple[torch.Tensor, torch.Tensor]:

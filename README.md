@@ -1,5 +1,6 @@
 # EMMET is now able to perform batched edits for batch sizes of 10k matching the performance of MEMIT
-This repo supports model editing with Llama-3
+
+Our latest study on Model Editing using Llama-3 just released - [Is Bigger Edit Batch Size Always Better? - An Empirical Study on Model Editing with Llama-3](https://arxiv.org/abs/2405.00664)
 
 # A Unified Framework for Model Editing
 
@@ -37,3 +38,25 @@ The above script can also be used to run ROME and MEMIT from the same file. We h
 
 
 **Before any experiment is run**, there might be need to update ```sys.path.append('/path/to/unified-model-editing')``` in the files 'experiments/evaluate_unified_editing.py' and 'experiments/py/eval_utils_zsre.py' 
+
+
+## How to Cite
+If you find our work useful, please cite it using the following:
+
+```bibtex
+@article{gupta2024unified,
+  title={A Unified Framework for Model Editing},
+  author={Gupta, Akshat and Sajnani, Dev and Anumanchipalli, Gopala},
+  journal={arXiv preprint arXiv:2403.14236},
+  year={2024}
+}
+```
+
+```bibtex
+@article{gupta2024model,
+  title={Model Editing at Scale leads to Gradual and Catastrophic Forgetting},
+  author={Gupta, Akshat and Rao, Anurag and Anumanchipalli, Gopala},
+  journal={arXiv preprint arXiv:2401.07453},
+  year={2024}
+}
+```
