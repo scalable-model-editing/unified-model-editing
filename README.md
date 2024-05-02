@@ -1,5 +1,7 @@
 # EMMET is now able to perform batched edits for batch sizes of 10k matching the performance of MEMIT
 
+## News 
+
 Our latest study on Model Editing using Llama-3 just released - [Is Bigger Edit Batch Size Always Better? - An Empirical Study on Model Editing with Llama-3](https://arxiv.org/abs/2405.00664)
 
 # A Unified Framework for Model Editing
