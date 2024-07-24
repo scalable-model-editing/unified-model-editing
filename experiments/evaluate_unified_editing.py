@@ -9,7 +9,7 @@ import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-#sys.path.append('/path/to/unified-model-editing')
+sys.path.append('/home/akshatgupta/KnowledgeEditing_local/unified-model-editing')
 from baselines.ft import FTHyperParams, apply_ft_to_model
 from baselines.mend import MENDHyperParams, MendRewriteExecutor
 from dsets import (
@@ -176,7 +176,7 @@ def main(
             datapoint = dataset.__getitem__(element_index)
             record_chunks.append(datapoint)
 
-        if r == 1000:
+        if r == 2200:
             break
 
         case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
@@ -206,7 +206,7 @@ def main(
             glue_results = {'edit_num': -1}
 
             out_file = glue_save_location + "base.json"
-            if num_edits > 1 and args.do_downstream_eval:
+            if (num_edits > 1 and args.do_downstream_eval) or args.sequential:
                 glue_eval = GLUEEval(model, tok)
                 glue_results = glue_eval.evaluate(glue_results, out_file, sst_flag = True, mrpc_flag = True, cola_flag=True, rte_flag=True)
 
@@ -247,7 +247,7 @@ def main(
                 }
 
             out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
-            if num_edits > 1 and args.do_downstream_eval:
+            if (args.sequential or num_edits > 1) and args.do_downstream_eval:
                 glue_eval = GLUEEval(edited_model, tok)
                 glue_results = glue_eval.evaluate(glue_results, out_file, sst_flag = True, mrpc_flag = True, cola_flag=True, rte_flag=True)
             
@@ -288,6 +288,11 @@ def main(
             with open(out_file, "w") as f:
                 json.dump(metrics, f, indent=1)
 
+
+        if args.model_save_interval > 0 and (r + 1) % args.model_save_interval == 0:
+            model_save_folder = args.model_save_location + alg_name + '/' + f"run_{str(run_id).zfill(3)}" + '/edits_' + str(e + 1)
+            os.makedirs(model_save_folder)
+            model.save_pretrained(model_save_folder)
 
 
         if not sequential:
@@ -423,7 +428,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_edits",
         type=int,
-        default=4,
+        default=1,
         help="Number of rewrites to perform simultaneously.",
     )
     parser.add_argument(
@@ -441,7 +446,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--downstream_eval_steps",
         type=int,
-        default=1,
+        default=100,
         help="If we want to do sequential editing or not",
     )
     parser.add_argument(
@@ -449,6 +454,18 @@ if __name__ == "__main__":
         type=bool,
         default=False,
         help="If we want to do sequential editing or not",
+    )
+    parser.add_argument(
+        "--model_save_interval",
+        type=int,
+        default=0,
+        help="If we want to do sequential editing or not",
+    )
+    parser.add_argument(
+        "--model_save_location",
+        type=str,
+        default='/data/akshat/layernorm_study/edited_models/',
+        help="END LOCATION WITH /",
     )
 
 
