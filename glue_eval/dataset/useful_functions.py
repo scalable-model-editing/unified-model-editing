@@ -12,3 +12,9 @@ def load_data(filename):
     output = pickle.load(a_file)
     a_file.close()
     return output
+
+def load_data_split(filename, split):
+    a_file = open(filename, "rb")
+    output = pickle.load(a_file)
+    a_file.close()
+    return output[:split], output[split:]

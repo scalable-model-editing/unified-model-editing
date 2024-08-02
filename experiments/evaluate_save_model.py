@@ -19,6 +19,7 @@ from dsets import (
     MultiCounterFactDataset,
     get_tfidf_vectorizer,
 )
+### changed eval_utils_counterfact to eval_utils_counterfact2
 from experiments.py.eval_utils_counterfact_token_entropy import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from memit import MEMITHyperParams, apply_memit_to_model
@@ -92,6 +93,7 @@ def main(
         run_dir.mkdir(parents=True, exist_ok=True)
     print(f"Results will be stored at {run_dir}")
 
+
     # Get run hyperparameters
     params_path = (
         run_dir / "params.json"
@@ -134,19 +136,18 @@ def main(
         original_weights = extract_model_original_weights(original_model, hparams)
         del original_model
     
-    if save_model:
+    
+    #Save model
+    if False:
         print("Model storage location provided at " + save_location)
         model_save_folder = save_location + '/edits_0'
         os.makedirs(model_save_folder)
         model.save_pretrained(model_save_folder)
-
+    
     # Load data
     print("Loading dataset, attribute snippets, tf-idf data")
     snips = AttributeSnippets(DATA_DIR) if not skip_generation_tests else None
     vec = get_tfidf_vectorizer(DATA_DIR) if not skip_generation_tests else None
-
-    #if num_edits > 1:
-    #    assert ds_name != "cf", f"{ds_name} does not support multiple edits"
 
     ds_class, ds_eval_method = DS_DICT[ds_name]
     ds = ds_class(DATA_DIR, tok=tok, size=dataset_size_limit)
@@ -168,7 +169,7 @@ def main(
 
     #load indices file and initialize dataset class
     if ds_name in 'cf':
-        indices_filename = 'data/counterfact_sampled_unique_cf_10_20000.json'
+        indices_filename = 'data/counterfact_sampled_unique_cf_20_2000.json'
         dataset = CounterFactDataset('data')
     if ds_name in 'mcf':
         indices_filename = 'data/counterfact_sampled_unique_mcf_10_20000.json'
@@ -182,13 +183,13 @@ def main(
 
     # Iterate through dataset
     for r, e in enumerate(range(0, len(sampled_indices[args.sample_num]), num_edits)):
+
         record_chunks = []
+        """ sample_indices is a dictionary with key == sample_num, value = list of indices in that sample """
+        """ num_edits is the number of edits to make"""
         for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
             datapoint = dataset.__getitem__(element_index)
             record_chunks.append(datapoint)
-
-        if r == 2200:
-            break
 
         case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
 
@@ -217,25 +218,28 @@ def main(
             glue_results = {'edit_num': -1}
 
             out_file = glue_save_location + "base.json"
-            if (num_edits > 1 and args.do_downstream_eval) or args.sequential:
+            #if num_edits > 1 and args.do_downstream_eval:
+            if args.do_downstream_eval:
                 glue_eval = GLUEEval(model, tok)
                 llama = "Llama" in model_name
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
                 glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, cross_entropy = False, *flags)
 
+
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
             with open(output_filename, "w") as f:
                 json.dump(glue_results, f, indent=4)
-        
+
+
         gen_test_vars = [snips, vec]
         for record in record_chunks:
             out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
             if out_file.exists():
                 print(f"Skipping {out_file}; already exists")
                 continue
-
-
+            
+            
             metrics = {
                 "case_id": record["case_id"],
                 "grouped_case_ids": case_ids,
@@ -254,16 +258,25 @@ def main(
                     ),
                 )
             }
+
+            # Dump metrics in .json
             with open(out_file, "w") as f:
                 json.dump(metrics, f, indent=1)
 
+
         start = time()
+
+        """
+        params_class, apply_algo = ALG_DICT[alg_name]
+        from rome import ROMEHyperParams, apply_rome_to_model
+        """
+
         edited_model, weights_copy, objective_distances = apply_algo(
             model,
             tok,
             [
                 {"case_id": record["case_id"], **record["requested_rewrite"]}
-                for record in record_chunks
+                for record in record_chunks                    
             ],
             hparams,
             copy=False,
@@ -288,11 +301,13 @@ def main(
                 }
 
             out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
-            if (args.sequential or num_edits > 1) and args.do_downstream_eval:
+            #if num_edits > 1 and args.do_downstream_eval:
+            if args.do_downstream_eval:
                 glue_eval = GLUEEval(edited_model, tok)
                 llama = "Llama" in model_name
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
                 glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, cross_entropy = False, *flags)
+                print(f"GLUEEEEEEEEEE {glue_results}")
             
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
@@ -310,7 +325,7 @@ def main(
                 data['time'] = exec_time,
 
                 post_list = ds_eval_method(
-                    edited_model,
+                    edited_model, 
                     tok,
                     record,
                     gpt_paraphrase,
@@ -321,6 +336,7 @@ def main(
                         else [None, None]
                     ),
                 )
+
                 for key, value in post_list.items():
                     if key in ["paraphrase_prompts_probs", "neighborhood_prompts_probs", "rewrite_prompts_probs", "attribute_prompts_probs"]:
                         for i in range(len(data['post'][key])):
@@ -336,6 +352,7 @@ def main(
                 json.dump(data, f, indent=4)
                 f.truncate()
 
+
         if not sequential:
             # Restore original weights
             with torch.no_grad():
@@ -344,14 +361,15 @@ def main(
 
         print("Evaluation took", time() - start)
 
+
         ## Saving model
         if save_model and (r + 1) % save_interval == 0:
             print("Model storage location provided at " + save_location)
             model_save_folder = save_location + '/edits_' + str(r + 1)
             os.makedirs(model_save_folder)
             model.save_pretrained(model_save_folder)
-        
 
+        
 def extract_model_original_weights(model, hparams):
     weights = {
         f"{hparams.rewrite_module_tmp.format(layer)}.weight": nethook.get_parameter(
@@ -477,7 +495,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_edits",
         type=int,
-        default=1,
+        default=4,
         help="Number of rewrites to perform simultaneously.",
     )
     parser.add_argument(
@@ -495,7 +513,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--downstream_eval_steps",
         type=int,
-        default=100,
+        default=1,
         help="If we want to do sequential editing or not",
     )
     parser.add_argument(
@@ -520,7 +538,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save_model_location",
         type=str,
-        default='/data/christinefang/models/',
+        default="model_location",
         required=False,
     )
     parser.add_argument(
@@ -534,6 +552,8 @@ if __name__ == "__main__":
         type=str,
         required=False,
     )
+
+
 
     parser.set_defaults(skip_generation_tests=False, conserve_memory=False)
     args = parser.parse_args()

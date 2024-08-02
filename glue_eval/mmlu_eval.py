@@ -2,67 +2,90 @@ from datasets import load_metric, load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from sklearn.metrics import matthews_corrcoef, f1_score
 from glue_eval.useful_functions import load_data
-import time
+import math
 import torch
+import time
 import numpy as np
 
 MAX_NUMBER_OF_FEW_SHOTS = 50
 
-class MRPCEval():
+class MMLUEval():
     def __init__(self, model, tokenizer, number_of_tests = None, number_of_few_shots = 0, eval_split = 'validation'):
         assert number_of_few_shots < MAX_NUMBER_OF_FEW_SHOTS, f"The number of few shots should not exceed {number_of_few_shots}"
         self.number_of_tests = number_of_tests
         self.number_of_few_shots = number_of_few_shots
         self.model = model
         self.tokenizer = tokenizer
-        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/mrpc.pkl', number_of_few_shots)
+        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/mmlu.pkl', number_of_few_shots)
         self.eval_dataset = self.eval_dataset[:number_of_tests] if not (number_of_tests is None) else self.eval_dataset
 
         self._initialize_prompts()
 
 
+
     def _initialize_prompts(self):
-        self.prefix_prompt = 'Are the sentences paraphrases of each other.\n'
-        self.postfix_prompt = 'Answer:'
+        self.glue_prompt = "Question: "
+        self.postfix_prompt = 'True or False? answer: '
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += f'{self.prefix_prompt}Sentence 1: {few_shot['sentence1']}\nSentence 2: {few_shot['sentence2']}\nAnswer: {'No' if few_shot['label'] == 0 else 'Yes'}\n'
+            prompta = '(A) ' + few_shot['choices'][0] + '\n'
+            promptb = '(B) ' + few_shot['choices'][1] + '\n'
+            promptc = '(C) ' + few_shot['choices'][2] + '\n'
+            promptd = '(D) ' + few_shot['choices'][3] + '\n'
+            self.few_shot_context += f'Question: {few_shot['question']}\n{prompta + promptb + promptc + promptd}Answer: {self._get_label(few_shot['answer'])}\n'
         print("FEWWWW_SHOTTT")
         print(self.few_show_context)
 
+    def _get_label(self, example_label):
+        if example_label == 0:
+            return 'A'
+        if example_label == 1:
+            return 'B'
+        if example_label == 2:
+            return 'C'
+        if example_label == 3:
+            return 'D'
     
     def _create_prompt(self, example):
-        prompt = 'Sentence 1: ' + example['sentence1'] + '\n'
-        prompt += 'Sentence 2: ' + example['sentence2'] + '\n'
+        prompt = 'Question: ' + example['question'] + '\n'
+        prompta = '(A) ' + example['choices'][0] + '\n'
+        promptb = '(B) ' + example['choices'][1] + '\n'
+        promptc = '(C) ' + example['choices'][2] + '\n'
+        promptd = '(D) ' + example['choices'][3] + '\n'
 
-        input_prompt = self.few_shot_context + self.prefix_prompt + prompt + self.postfix_prompt
+        input_prompt = self.few_shot_context + prompt + prompta + promptb + promptc + promptd + 'Answer:'
+        return input_prompt, example['question'], example['answer']
 
-        return input_prompt, example['sentence1'], example['sentence2'], example['label']
-
-
-    def _get_answer(self, generated_text):
-        answer_text = generated_text.split(self.postfix_prompt)[-1].strip().strip()
-
-        if 'Yes' in answer_text:
-            return 1
-        elif 'No' in answer_text:
+    def _get_answer(self, text):
+        if 'A\n' in text:
             return 0
-
+        elif 'B\n' in text:
+            return 1
+        elif 'C\n' in text:
+            return 2
+        elif 'D\n' in text:
+            return 3
         return -1
 
+    def evaluate(self, gen_len = 10, llama = False, print_logs = False):
 
-    def evaluate(self, gen_len = 3, llama = False, print_logs = False):
-        yes_tok, no_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['Yes', 'No'])
+        a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}\n")["input_ids"] for n in ['A', 'B', 'C', 'D'])
 
         if llama:#'llama-2' in model.config._name_or_path.lower():
-            yes_tok = yes_tok[2:]
-            no_tok = no_tok[2:]
+            print("LLAMMA TRUE")
+            a_tok = a_tok[2:]
+            b_tok = b_tok[2:]
+            c_tok = c_tok[2:]
+            d_tok = d_tok[2:]
 
-        yes_len, no_len = (len(n) for n in [yes_tok, no_tok])
+        a_len, b_len, c_len, d_len = (len(n) for n in [a_tok, b_tok, c_tok, d_tok])
 
         correct = 0
         incorrect = 0
         invalid = 0
+
+        correct_new = 0
+        incorrect_new = 0
 
         pos_correct = 0
         neg_correct = 0
@@ -73,32 +96,34 @@ class MRPCEval():
         labels = []
         predictions_new = []
         stored_generations = []
+        new_equal_old = []
+
         start = time.time()
-
         for s, example in enumerate(self.eval_dataset):
-
-            input_prompt, sentence1, sentence2, label = self._create_prompt(example)
+            input_prompt, sentence, label = self._create_prompt(example)
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
-            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"]) - 1
-            dic = {0: [yes_tok, yes_len], 1: [no_tok, no_len]}
+            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
+            print(prefix_tok_len)
+
+            probs = [0, 0, 0, 0]
+            gen_texts = [0, 0, 0, 0]
+            gen_texts2 = [0, 0, 0, 0]
+            dic = {0: [a_tok, a_len], 1: [b_tok, b_len], 2: [c_tok, c_len], 3: [d_tok, d_len]}
+
             max_len = input_prompt_ids.shape[1] + gen_len
-        
-            probs = [0, 0]
-            gen_texts = [0,0]
 
-            suffixes = ['Yes', 'No']
+            suffixes = ['A', 'B', 'C', 'D']
 
-            for i in range(2):
-                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i]}"], return_tensors="pt").to('cuda')
+            for i in range(4):
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i]}\n"], return_tensors="pt").to('cuda')
 
                 with torch.no_grad():
                     logits = self.model(**prompt_tok).logits    #the model takes in a list of prompts. logits = a x b x c where a is the number of prompts. Then bxc is the output logits. 
 
-                if True:
+                if llama:
                     logits = logits[:, 1:, :]
-
 
                 cur_len = dic[i][1]
 
@@ -108,24 +133,37 @@ class MRPCEval():
                     logits[0, prefix_tok_len + j - 1, :], dim=0
                     )[cur_tok].item()
                 probs[i] /= cur_len
-                
+
                 gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
 
             output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
             generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
+            answer = self._get_answer(generated_text.replace(input_prompt_text, ''))
 
-            prob_yes = np.exp(-probs[0])
-            prob_no = np.exp(-probs[1])
+            prob_a = np.exp(-probs[0])
+            prob_b = np.exp(-probs[1])
+            prob_c = np.exp(-probs[2])
+            prob_d = np.exp(-probs[3])
 
-            gen_text1 = gen_texts[0] #gen_text1 and 2 are the same cause prompts r same
-            gen_text2 = gen_texts[1]
+            gen_texts1 = gen_texts[0]
 
 
-            answer = self._get_answer(generated_text)
             predictions.append(answer)
             labels.append(label)
-            predictions_new.append(1 if prob_yes > prob_no else 0)
 
+            def hi(prob_a, prob_b, prob_c, prob_d):
+                if prob_a > max(prob_b, prob_c, prob_d):
+                    return 0
+                elif prob_b > max(prob_a, prob_c, prob_d):
+                    return 1
+                elif prob_c > max(prob_b, prob_a, prob_d):
+                    return 2
+                elif prob_d > max(prob_b, prob_c, prob_a):
+                    return 3
+                return -1
+
+            new_answer = hi(prob_a, prob_b, prob_c, prob_d)
+            predictions_new.append(new_answer)
 
             if answer == -1:
                 invalid += 1
@@ -133,33 +171,29 @@ class MRPCEval():
 
                 if answer == label:
                     correct += 1
-
-                    if label == 1:
-                        pos_correct += 1
-                    elif label == 0:
-                        neg_correct += 1
-
                 else:
                     incorrect += 1
 
-                    if label == 1:
-                        pos_incorrect += 1
-                    elif label == 0:
-                        neg_incorrect += 1
+            if new_answer == label:
+                correct_new += 1
+            else:
+                incorrect_new += 1
 
             exp_temp_dict = {
-                'sentence1': sentence1, 
-                'sentence2': sentence2, 
+                'sentence': sentence,
                 'label': label,
                 'input_prompt': input_prompt_text,
                 'generated_text': generated_text.replace(input_prompt_text, ''),
                 'answer': answer,
-                'prob_yes': prob_yes,
-                'prob_no': prob_no,
-                'gen_text_new': gen_text1,
-                'answer_new': 1 if prob_yes > prob_no else 0,
+                'invalid': True if answer == -1 else False,
                 'correct': answer == label,
-                'invalid': True if answer == -1 else False
+                'prob_a': prob_a,
+                'prob_b': prob_b,
+                'prob_c': prob_c,
+                'prob_d': prob_d,
+                'answer_new': hi(prob_a, prob_b, prob_c, prob_d),
+                'correct_new': new_answer == label,
+
             }
             stored_generations.append(exp_temp_dict)
 
@@ -170,7 +204,6 @@ class MRPCEval():
                 print(correct, incorrect, invalid, s+1, '|', pos_correct, neg_correct, '|', pos_incorrect, neg_incorrect, '|ACC: ', correct / (correct + incorrect + invalid), '|MCC:', mcc, '|F1:', f1)
                 print('--'*50)
 
-
         end = time.time()
         mcc = matthews_corrcoef(labels, predictions)
         f1 = f1_score(labels, predictions, average='weighted')
@@ -179,25 +212,22 @@ class MRPCEval():
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
+            'correct_new': correct_new,
+            'incorrect_new': incorrect_new,
             'total': s+1,
             'f1': f1,
             'f1_new': f1_new,
             'mcc': mcc,
             'time': end-start,
         }
-
         return result_dict, stored_generations
 
 if __name__ == '__main__':
     # Load the tokenizer and model
-    #model_name = 'EleutherAI/gpt-j-6b'
-    #model_name = 'gpt2-xl'
-    model_name = '/data/akshat/lingua-models/Llama-2-7b-hf'
+    model_name = "/data/akshat/models/gpt2-xl"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name)
     model.to('cuda')
 
-    mrpc_eval = MRPCEval(model, tokenizer)
-    mrpc_eval.evaluate(print_logs='True')
-    
-    
+    mmlu_eval = MMLUEval(model, tokenizer)
+    result_dict, stored_generations = mmlu_eval.evaluate(print_logs='True'
