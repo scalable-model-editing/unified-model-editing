@@ -24,7 +24,6 @@ class GLUEEval():
         self.sentiment_analysis_eval = SENTIMENT_ANALYSIS_Eval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
         self.nli_eval = NLIEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
         self.dialogue_eval = DIALOGUE_Eval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = number_of_few_shots)
-        #self.validation_loss = Cross_entropy(model, tokenizer)
 
 
     def _save_generations(self, record_path, generations, task):
