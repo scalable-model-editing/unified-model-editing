@@ -25,7 +25,7 @@ class NLIEval():
         self.postfix_prompt = 'True or False? answer:' 
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += f'{few_shot["sentence1"]} entails the {few_shot["sentence2"]} {self.postfix_prompt} {("True" if few_shot['label'] == "entailment" else "False")}\n'  
+            self.few_shot_context += f'{few_shot["sentence1"]} entails the {few_shot["sentence2"]} {self.postfix_prompt} {("True" if few_shot["label"] == "entailment" else "False")}\n'  
     
     def _create_prompt(self, example):
         input_prompt = self.few_shot_context + f'{example["sentence1"]} entails the {example["sentence2"]} {self.postfix_prompt}'
@@ -47,7 +47,14 @@ class NLIEval():
 
     def evaluate(self, gen_len = 3, print_logs = False):
         true_tok, false_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['True', 'False'])
+
+        if 'llama-2' in self.model.config._name_or_path.lower():
+            true_tok = true_tok[2:]
+            false_tok = false_tok[2:]
+
         true_len, false_len = (len(n) for n in [true_tok, false_tok])
+        print(true_len)
+        suffixes = {0: ['True', true_tok, true_len], 1: ['False', false_tok, false_len]}
 
         correct = 0
         incorrect = 0
@@ -69,45 +76,51 @@ class NLIEval():
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
-            max_len = input_prompt_ids.shape[1] + gen_len
+            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
 
+            if 'llama-2' in self.model.config._name_or_path.lower():
+                prefix_tok_len = prefix_tok_len - 1
+
+            max_len = input_prompt_ids.shape[1] + gen_len
             output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
             generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-
             answer = self._get_answer(generated_text)
+
             predictions.append(answer)
             labels.append(label)
 
             #### EVALUATE NEW ACC 
-            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
+            
+            probs = [0 for _ in suffixes.keys()]
+            gen_texts = [0 for _ in suffixes.keys()]
 
-            prompt_tok = self.tokenizer([f"{input_prompt} {suffix}" for suffix in ['True', 'False']], return_tensors="pt").to('cuda')
-            logits = self.model(**prompt_tok).logits.to('cuda')
+            for i in range(len(suffixes.keys())):
+                print(suffixes[i][0])
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}"], return_tensors="pt").to('cuda')
 
-            probs = [0, 0]
-            gen_texts = [0,0]
-            for i in range(2):
-                cur_len = true_len if i % 2 == 0 else false_len
+                with torch.no_grad():
+                    logits = self.model(**prompt_tok).logits
+
+                if 'llama-2' in self.model.config._name_or_path.lower():
+                    logits = logits[:, 1:, :]
+
+                cur_len = suffixes[i][2]
 
                 for j in range(cur_len):
-                    cur_tok = (true_tok if i % 2 == 0 else false_tok)[j]
+                    cur_tok = suffixes[i][1][j]
                     probs[i] += -torch.nn.functional.log_softmax(
-                    logits[i, prefix_tok_len + j - 1, :], dim=0
+                    logits[0, prefix_tok_len + j - 1, :], dim=0
                     )[cur_tok].item()
                 probs[i] /= cur_len
-
-                gen_texts[i] = self.tokenizer.decode(logits[i, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
+                gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
 
             prob_true = np.exp(-probs[0])
-            prob_false = np.exp(-probs[1])  
-
-            gen_text1 = gen_texts[0]
-            gen_text2 = gen_texts[1]
+            prob_false = np.exp(-probs[1])
 
             print(f"prob_true: {prob_true}, prob_false: {prob_false}")
 
-            
-            predictions_new.append(1 if prob_true > prob_false else 0)
+            answer_new = 1 if prob_true > prob_false else 0
+            predictions_new.append(answer_new)
             print(f"prediction: {answer}, true: {label}")
             if answer == -1:
                 invalid += 1
@@ -132,16 +145,14 @@ class NLIEval():
             exp_temp_dict = {
                 'sentence1': sentence1,
                 'sentence2': sentence2,
-                'label': label,
                 'input_prompt': input_prompt_text,
+                'true_answer': 'True' if label == 1 else 'False', 
                 'generated_text': generated_text.replace(input_prompt_text, ''),
-                'answer': answer,
+                'correct': answer == label,
                 'prob_true': prob_true,
                 'prob_false': prob_false,
-                'gen_text_new': gen_text1,
-                'answer_new': 1 if prob_true > prob_false else 0,
-                'correct': answer == label,
-                'invalid': True if answer == -1 else False
+                'answer_new': 'True' if answer_new == 1 else 'False', 
+                'correct_new': answer_new == label,
             }
             stored_generations.append(exp_temp_dict)
 
@@ -156,12 +167,14 @@ class NLIEval():
         end = time.time()
         mcc = matthews_corrcoef(labels, predictions)
         f1 = f1_score(labels, predictions, average='weighted')
+        f1_new = f1_score(labels, predictions_new, average='weighted')
         result_dict = {
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
             'total': s+1,
             'f1': f1,
+            'f1_new': f1_new,
             'mcc': mcc,
             'time': end-start,
         }

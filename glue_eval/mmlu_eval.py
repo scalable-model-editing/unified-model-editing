@@ -1,7 +1,7 @@
 from datasets import load_metric, load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from sklearn.metrics import matthews_corrcoef, f1_score
-from glue_eval.useful_functions import load_data
+from glue_eval.useful_functions import load_data, load_data_split
 import math
 import torch
 import time
@@ -22,7 +22,6 @@ class MMLUEval():
         self._initialize_prompts()
 
 
-
     def _initialize_prompts(self):
         self.glue_prompt = "Question: "
         self.postfix_prompt = 'True or False? answer: '
@@ -32,9 +31,9 @@ class MMLUEval():
             promptb = '(B) ' + few_shot['choices'][1] + '\n'
             promptc = '(C) ' + few_shot['choices'][2] + '\n'
             promptd = '(D) ' + few_shot['choices'][3] + '\n'
-            self.few_shot_context += f'Question: {few_shot['question']}\n{prompta + promptb + promptc + promptd}Answer: {self._get_label(few_shot['answer'])}\n'
+            self.few_shot_context += f"Question: {few_shot['question']}\n{prompta + promptb + promptc + promptd}Answer: {self._get_label(few_shot['answer'])}\n"
         print("FEWWWW_SHOTTT")
-        print(self.few_show_context)
+        print(self.few_shot_context)
 
     def _get_label(self, example_label):
         if example_label == 0:
@@ -67,18 +66,19 @@ class MMLUEval():
             return 3
         return -1
 
-    def evaluate(self, gen_len = 10, llama = False, print_logs = False):
+    def evaluate(self, gen_len = 10, print_logs = False):
 
         a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}\n")["input_ids"] for n in ['A', 'B', 'C', 'D'])
 
-        if llama:#'llama-2' in model.config._name_or_path.lower():
-            print("LLAMMA TRUE")
+        if 'llama-2' in self.model.config._name_or_path.lower():
             a_tok = a_tok[2:]
             b_tok = b_tok[2:]
             c_tok = c_tok[2:]
             d_tok = d_tok[2:]
 
         a_len, b_len, c_len, d_len = (len(n) for n in [a_tok, b_tok, c_tok, d_tok])
+
+        suffixes = {0: ['A', a_tok, a_len], 1: ['B', b_tok, b_len], 2: ['C', c_tok, c_len], 3: ['D', d_tok, d_len]}
 
         correct = 0
         incorrect = 0
@@ -105,30 +105,35 @@ class MMLUEval():
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
             prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
-            print(prefix_tok_len)
 
-            probs = [0, 0, 0, 0]
-            gen_texts = [0, 0, 0, 0]
-            gen_texts2 = [0, 0, 0, 0]
-            dic = {0: [a_tok, a_len], 1: [b_tok, b_len], 2: [c_tok, c_len], 3: [d_tok, d_len]}
+            if 'llama-2' in self.model.config._name_or_path.lower():
+                prefix_tok_len = prefix_tok_len - 1
 
             max_len = input_prompt_ids.shape[1] + gen_len
+            output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
+            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
+            answer = self._get_answer(generated_text.replace(input_prompt_text, ''))
 
-            suffixes = ['A', 'B', 'C', 'D']
+            predictions.append(answer)
+            labels.append(label)
 
-            for i in range(4):
-                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i]}\n"], return_tensors="pt").to('cuda')
+            #calculate suffix probabilities
+            probs = [0 for _ in suffixes.keys()]
+            gen_texts = [0 for _ in suffixes.keys()]
+
+            for i in range(len(suffixes.keys())):
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}\n"], return_tensors="pt").to('cuda')
 
                 with torch.no_grad():
-                    logits = self.model(**prompt_tok).logits    #the model takes in a list of prompts. logits = a x b x c where a is the number of prompts. Then bxc is the output logits. 
+                    logits = self.model(**prompt_tok).logits
 
-                if llama:
+                if 'llama-2' in self.model.config._name_or_path.lower():
                     logits = logits[:, 1:, :]
 
-                cur_len = dic[i][1]
+                cur_len = suffixes[i][2]
 
                 for j in range(cur_len):
-                    cur_tok = dic[i][0][j]
+                    cur_tok = suffixes[i][1][j]
                     probs[i] += -torch.nn.functional.log_softmax(
                     logits[0, prefix_tok_len + j - 1, :], dim=0
                     )[cur_tok].item()
@@ -136,22 +141,12 @@ class MMLUEval():
 
                 gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
 
-            output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
-            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-            answer = self._get_answer(generated_text.replace(input_prompt_text, ''))
-
             prob_a = np.exp(-probs[0])
             prob_b = np.exp(-probs[1])
             prob_c = np.exp(-probs[2])
             prob_d = np.exp(-probs[3])
 
-            gen_texts1 = gen_texts[0]
-
-
-            predictions.append(answer)
-            labels.append(label)
-
-            def hi(prob_a, prob_b, prob_c, prob_d):
+            def max_prob_suffix(prob_a, prob_b, prob_c, prob_d):
                 if prob_a > max(prob_b, prob_c, prob_d):
                     return 0
                 elif prob_b > max(prob_a, prob_c, prob_d):
@@ -162,7 +157,7 @@ class MMLUEval():
                     return 3
                 return -1
 
-            new_answer = hi(prob_a, prob_b, prob_c, prob_d)
+            new_answer = max_prob_suffix(prob_a, prob_b, prob_c, prob_d)
             predictions_new.append(new_answer)
 
             if answer == -1:
@@ -181,19 +176,16 @@ class MMLUEval():
 
             exp_temp_dict = {
                 'sentence': sentence,
-                'label': label,
                 'input_prompt': input_prompt_text,
+                'true_answer': self._get_label(label),
                 'generated_text': generated_text.replace(input_prompt_text, ''),
-                'answer': answer,
-                'invalid': True if answer == -1 else False,
                 'correct': answer == label,
                 'prob_a': prob_a,
                 'prob_b': prob_b,
                 'prob_c': prob_c,
                 'prob_d': prob_d,
-                'answer_new': hi(prob_a, prob_b, prob_c, prob_d),
+                'answer_new': self._get_label(answer_new),
                 'correct_new': new_answer == label,
-
             }
             stored_generations.append(exp_temp_dict)
 
@@ -230,4 +222,4 @@ if __name__ == '__main__':
     model.to('cuda')
 
     mmlu_eval = MMLUEval(model, tokenizer)
-    result_dict, stored_generations = mmlu_eval.evaluate(print_logs='True'
+    result_dict, stored_generations = mmlu_eval.evaluate(print_logs='True')

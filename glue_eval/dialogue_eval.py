@@ -23,41 +23,49 @@ class DIALOGUE_Eval():
         self._initialize_prompts()
 
     def _initialize_prompts(self): 
-        self.postfix_prompt = "The answer should be exact A or B or C or D. Among A through D, the answer is"
+        self.postfix_prompt = "Answer:"
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += f"Q: Given the following: {few_shot['article']}\n Which choice is correct? Answer Chioces:\n (A){few_shot["options"][0]} \n (B){few_shot["options"][1]} \n (C){few_shot["options"][2]} \n (D){few_shot["options"][0]} \n {self.postfix_prompt} {few_shot['answers']}"
+            self.few_shot_context += f"Q: Given the following: {few_shot['article']}\nWhich choice is correct?\n(A){few_shot['options'][0]}\n(B){few_shot['options'][1]}\n(C){few_shot['options'][2]}\n(D){few_shot['options'][3]}\n{self.postfix_prompt} {few_shot['answers']}\n"
+        print(self.few_shot_context)
     
     def _create_prompt(self, example):
-        input_prompt =   f"Q: Given the following: {example['article']}\n Which choice is correct? Answer Chioces:\n (A){example["options"][0]} \n (B){example["options"][1]} \n (C){example["options"][2]} \n (D){example["options"][0]} \n {self.postfix_prompt}"
+        input_prompt =   self.few_shot_context + f"Q: Given the following: {example['article']}\nWhich choice is correct?\n(A){example['options'][0]}\n(B){example['options'][1]}\n(C){example['options'][2]}\n(D){example['options'][3]}\n{self.postfix_prompt}"
         return input_prompt, example['options'], example['article'], self._get_label(example['answers'])
     
     def _get_answer(self, generated_text):
         answer_text = generated_text.split(self.postfix_prompt)[-1].strip().strip()
-
-        if 'A' == answer_text:
+        if 'A\n' in answer_text:
             return 0
-        if 'B' == answer_text:
+        if 'B\n' in answer_text:
             return 1
-        if 'C' == answer_text:
+        if 'C\n' in answer_text:
             return 2
-        if 'D' == answer_text:
+        if 'D\n' in answer_text:
             return 3
         return -1
 
-    def _get_label(self, example_label):
-        if 'A' == example_label:
+    def _get_label(self, suffix):
+        if 'A' == suffix:
             return 0
-        if 'B' == example_label:
+        if 'B' == suffix:
             return 1
-        if 'C' == example_label:
+        if 'C' == suffix:
             return 2
-        if 'D' == example_label:
+        if 'D' == suffix:
             return 3
         
     def evaluate(self, gen_len = 3, print_logs = False):
-        a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}\n")["input_ids"][-2:] for n in ['A', 'B', 'C', 'D'])
+        a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}\n")["input_ids"] for n in ['A', 'B', 'C', 'D'])
+
+        if 'llama-2' in self.model.config._name_or_path.lower():
+            a_tok = a_tok[2:]
+            b_tok = b_tok[2:]
+            c_tok = c_tok[2:]
+            d_tok = d_tok[2:]
+
         a_len, b_len, c_len, d_len = (len(n) for n in [a_tok, b_tok, c_tok, d_tok])
+        suffixes = {0: ['A', a_tok, a_len], 1: ['B', b_tok, b_len], 2: ['C', c_tok, c_len], 3: ['D', d_tok, d_len]}
 
         correct = 0
         incorrect = 0
@@ -80,23 +88,30 @@ class DIALOGUE_Eval():
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
             prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
-            print(prefix_tok_len)
 
-            probs = [0, 0, 0, 0]
-            gen_texts = [0, 0, 0, 0]
-            gen_texts2 = [0, 0, 0, 0]
-            dic = {0: [a_tok, a_len], 1: [b_tok, b_len], 2: [c_tok, c_len], 3: [d_tok, d_len]}
-            
+            if 'llama-2' in self.model.config._name_or_path.lower():
+                prefix_tok_len = prefix_tok_len - 1
+
             max_len = input_prompt_ids.shape[1] + gen_len
-            suffixes = ['A', 'B', 'C', 'D']
-            for i in range(4):
-                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i]}\n"], return_tensors="pt").to('cuda')
+            output = self.model.generate(input_prompt_ids, max_length = max_len, do_sample = False)
+            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
+            answer = self._get_answer(generated_text.replace(input_prompt_text, ''))
+
+            predictions.append(answer)
+            labels.append(label)
+
+            #calculate suffix probabilities
+            probs = [0 for _ in suffixes.keys()]
+            gen_texts = [0 for _ in suffixes.keys()]
+
+            for i in range(len(suffixes.keys())):
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}\n"], return_tensors="pt").to('cuda')
                 logits = self.model(**prompt_tok).logits.to('cuda')
 
-                cur_len = dic[i][1]
+                cur_len = suffixes[i][2]
 
                 for j in range(cur_len):
-                    cur_tok = dic[i][0][j]
+                    cur_tok = suffixes[i][1][j]
                     probs[i] += -torch.nn.functional.log_softmax(
                     logits[0, prefix_tok_len + j - 1, :], dim=0
                     )[cur_tok].item()
@@ -104,28 +119,25 @@ class DIALOGUE_Eval():
 
                 gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
 
-            output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
-            generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-            answer = self._get_answer(generated_text)
             prob_a = np.exp(-probs[0])
             prob_b = np.exp(-probs[1])  
             prob_c = np.exp(-probs[2])  
             prob_d = np.exp(-probs[3]) 
-            predictions.append(answer)
-            labels.append(label)
-            def hi(prob_a, prob_b, prob_c, prob_d):
+            
+            def max_prob_suffix(prob_a, prob_b, prob_c, prob_d):
                 if prob_a > max(prob_b, prob_c, prob_d):
-                    return 0
+                    return 'A', 0
                 elif prob_b > max(prob_a, prob_c, prob_d):
-                    return 1
+                    return 'B', 1
                 elif prob_c > max(prob_b, prob_a, prob_d):
-                    return 2
+                    return 'C', 2
                 elif prob_d > max(prob_b, prob_c, prob_a):
-                    return 3
+                    return 'D', 3
                 return -1
             
-            new_answer = hi(prob_a, prob_b, prob_c, prob_d)
-            predictions_new.append(new_answer)
+            new_answer = max_prob_suffix(prob_a, prob_b, prob_c, prob_d)
+            predictions_new.append(new_answer[1])
+
             print(f"prediction: {answer}, true: {label}")
             if answer == -1:
                 invalid += 1
@@ -148,20 +160,18 @@ class DIALOGUE_Eval():
                         neg_incorrect += 1
 
             exp_temp_dict = {
-                'options': options,
                 'article': article,
-                'label': label,
+                'options': options,  
                 'input_prompt': input_prompt_text,
+                'true_answer': example['answers'],
                 'generated_text': generated_text.replace(input_prompt_text, ''),
-                'answer': answer,
-                'invalid': True if answer == -1 else False,
                 'correct': answer == label,
                 'prob_a': prob_a,
                 'prob_b': prob_b,
                 'prob_c': prob_c,
                 'prob_d': prob_d,
-                'answer_new': hi(prob_a, prob_b, prob_c, prob_d),
-                'correct_new': new_answer == label,
+                'answer_new': new_answer[0],
+                'correct_new': new_answer[1] == label,
             }
             stored_generations.append(exp_temp_dict)
 
@@ -176,12 +186,14 @@ class DIALOGUE_Eval():
         end = time.time()
         mcc = matthews_corrcoef(labels, predictions)
         f1 = f1_score(labels, predictions, average='weighted')
+        f1_new = f1_score(labels, predictions_new, average='weighted')
         result_dict = {
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
             'total': s+1,
             'f1': f1,
+            'f1': f1_new,
             'mcc': mcc,
             'time': end-start,
         }

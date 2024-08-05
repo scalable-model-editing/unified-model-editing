@@ -23,8 +23,6 @@ def compute_rewrite_quality_counterfact(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     record: typing.Dict,
-    gpt_paraphrase,
-    llama,
     snips: AttributeSnippets,
     vec: TfidfVectorizer,
 ) -> typing.Dict:

@@ -19,7 +19,7 @@ from dsets import (
     MultiCounterFactDataset,
     get_tfidf_vectorizer,
 )
-from experiments.py.eval_utils_counterfact_token_entropy import compute_rewrite_quality_counterfact
+from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from memit import MEMITHyperParams, apply_memit_to_model
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -62,6 +62,8 @@ def main(
     save_location: str,
     gpt_paraphrase: bool,
     downstream_tasks: str,
+    number_of_few_shots: int,
+    number_of_tests: int,
     dir_name: str,
     num_edits: int = 1,
     use_cache: bool = False,
@@ -218,10 +220,9 @@ def main(
 
             out_file = glue_save_location + "base.json"
             if (num_edits > 1 and args.do_downstream_eval) or args.sequential:
-                glue_eval = GLUEEval(model, tok)
-                llama = "Llama" in model_name
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, cross_entropy = False, *flags)
+                glue_eval = GLUEEval(model, tok, number_of_tests, number_of_few_shots)
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
+                glue_results = glue_eval.evaluate(glue_results, out_file, *flags)
 
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
@@ -245,8 +246,6 @@ def main(
                     model,
                     tok,
                     record,
-                    gpt_paraphrase,
-                    llama,
                     *(
                         gen_test_vars
                         if record["case_id"] % generation_test_interval == 0
@@ -289,10 +288,9 @@ def main(
 
             out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
             if (args.sequential or num_edits > 1) and args.do_downstream_eval:
-                glue_eval = GLUEEval(edited_model, tok)
-                llama = "Llama" in model_name
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, cross_entropy = False, *flags)
+                glue_eval = GLUEEval(edited_model, tok, number_of_tests, number_of_few_shots)
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
+                glue_results = glue_eval.evaluate(glue_results, out_file, *flags)
             
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
@@ -313,8 +311,6 @@ def main(
                     edited_model,
                     tok,
                     record,
-                    gpt_paraphrase,
-                    llama,
                     *(
                         gen_test_vars
                         if record["case_id"] % generation_test_interval == 0
@@ -534,6 +530,18 @@ if __name__ == "__main__":
         type=str,
         required=False,
     )
+    parser.add_argument(
+        "--number_of_few_shots",
+        type=int,
+        default=0,
+        required=False,
+    )
+    parser.add_argument(
+        "--number_of_tests",
+        type=int,
+        default=None,
+        required=False,
+    )
 
     parser.set_defaults(skip_generation_tests=False, conserve_memory=False)
     args = parser.parse_args()
@@ -556,6 +564,8 @@ if __name__ == "__main__":
         args.save_model_location,
         args.gpt_paraphrase,
         args.downstream_tasks,
+        args.number_of_few_shots,
+        args.number_of_tests,
         dir_name=args.alg_name,
         num_edits=args.num_edits,
         use_cache=args.use_cache,

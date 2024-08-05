@@ -48,17 +48,20 @@ def compute_rewrite_quality_counterfact(
     paraphrase_prompts = record["paraphrase_prompts"]
     neighborhood_prompts = record["neighborhood_prompts"]
     generation_prompts = record["generation_prompts"]
+    attribute_prompts = record["attribute_prompts"]
 
     # Form a list of lists of prefixes to test.
     prob_prompts = [
         rewrite_prompts,
         paraphrase_prompts,
         neighborhood_prompts,
+        attribute_prompts,
     ]
     which_correct = [
         [0 for _ in range(len(rewrite_prompts))],
         [0 for _ in range(len(paraphrase_prompts))],
         [1 for _ in range(len(neighborhood_prompts))],
+        [0 for _ in range(len(attribute_prompts))],
     ]
     # Flatten all the evaluated prefixes into one list.
     probs, targets_correct = test_batch_prediction(
@@ -83,6 +86,7 @@ def compute_rewrite_quality_counterfact(
                 "rewrite_prompts",
                 "paraphrase_prompts",
                 "neighborhood_prompts",
+                "attribute_prompts",
             ]
         )
     } | {
@@ -92,6 +96,7 @@ def compute_rewrite_quality_counterfact(
                 "rewrite_prompts",
                 "paraphrase_prompts",
                 "neighborhood_prompts",
+                "attribute_prompts",
             ]
         )
     }
@@ -144,10 +149,9 @@ def test_batch_prediction(
         return_tensors="pt",
     ).to("cuda")
 
-    print(prefixes)
-    print(target_new, target_true)
 
     a_tok, b_tok = (tok(f" {n}")["input_ids"] for n in [target_new, target_true])
+
     if 'llama-2' in model.config._name_or_path.lower():
         a_tok = a_tok[2:]
         b_tok = b_tok[2:]
@@ -190,6 +194,53 @@ def test_batch_prediction(
             gen_text = tok.decode(logits[i, prefix_lens[i // 2] - 1 : prefix_lens[i // 2] + cur_len-1, :].argmax(dim = -1))
             gen_text_list.append(gen_text)
 
+    prompts = [(prefix, suffix) for prefix in prefixes for suffix in [target_new, target_true]]
+
+    prompt_gen = generate_fast(
+            model,
+            tok,
+            prefixes,
+            n_gen_per_prompt=1,
+            top_k=1,
+            max_out_len=50,
+            )
+    text_sliding = []
+    correct_sliding = []
+
+    for i in range(len(prompts)):
+        if (which_correct[i // 2] == 0 and i % 2 == 0) or (
+            which_correct[i // 2] == 1 and i % 2 == 1
+        ):
+        # check if text generated at gen_texts[i//2] contains prompts[i][1] (suffix)
+            correct_sufx = prompts[i][1] # is a string
+            prefx = prompts[i][0]
+            print(f"suffix: {correct_sufx}")
+            print(f"prefx: {prefx}")
+
+            #post edit correctness
+            full_text = prompt_gen[i//2] # is a string
+            generated_suffix = full_text[len(prefx):]
+            text_sliding.append(generated_suffix)
+            correct = correct_sufx in generated_suffix
+            correct_sliding.append(correct)
+
+    post_list = [{"target_new_prob": probs[i].item(),
+                "target_true_prob": probs[i + 1].item(),
+                "target_new": target_new,
+                "target_true":  target_true,
+                'prompt': prefixes[e] ,
+                'generated_text': gen_text_list[e],
+                'correct': targets_correct[e],
+                'sliding_text': text_sliding[e],
+                'sliding_correct': correct_sliding[e],
+                }
+        for e, i in enumerate(range(0, len(probs), 2))]
+
+    return post_list, correct_sliding #targets_correct
+
+    text_sliding = []
+    correct_sliding = []
+
     post_list = [{"target_new": probs[i].item(), 
                 "target_true": probs[i + 1].item(), 
                 'prompt': prefixes[e] , 
@@ -197,7 +248,7 @@ def test_batch_prediction(
                 'correct': targets_correct[e]}
         for e, i in enumerate(range(0, len(probs), 2))]
 
-    return post_list, targets_correct
+    return post_list, correct_sliding
 
 
 def test_generation(

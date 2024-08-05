@@ -41,9 +41,16 @@ for example in eval_dataset:
 
 for label in classwise:
     random.shuffle(classwise[label])
-    finalized_subset += classwise[label][:classwise_size]
 
-random.shuffle(finalized_subset)
-save_data( 'mmlu.pkl', finalized_subset)
-    
-    
+classwise_size = min(len(examples) for examples in classwise.values())
+
+# Prepare the finalized subset with alternating rows of classes
+index = 0
+while len(finalized_subset) < classwise_size * len(classwise):
+    for label in classwise:
+        if index < len(classwise[label]):
+            finalized_subset.append(classwise[label][index])
+    index += 1
+
+# Save the finalized subset
+save_data('mmlu.pkl', finalized_subset)

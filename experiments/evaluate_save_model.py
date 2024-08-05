@@ -223,7 +223,7 @@ def main(
                 glue_eval = GLUEEval(model, tok)
                 llama = "Llama" in model_name
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, cross_entropy = False, *flags)
+                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, *flags)
 
 
             #store the individual overall result file
@@ -306,7 +306,7 @@ def main(
                 glue_eval = GLUEEval(edited_model, tok)
                 llama = "Llama" in model_name
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, cross_entropy = False, *flags)
+                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, *flags)
                 print(f"GLUEEEEEEEEEE {glue_results}")
             
             #store the individual overall result file

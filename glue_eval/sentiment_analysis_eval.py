@@ -28,7 +28,7 @@ class SENTIMENT_ANALYSIS_Eval():
         self.postfix_prompt = 'answer:' 
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += f'{self.prefix_prompt} {few_shot["sentence"]} {self.postfix_prompt} {("positive" if few_shot['label'] == "1" else "negative")}\n'  
+            self.few_shot_context += f'{self.prefix_prompt} {few_shot["sentence"]} {self.postfix_prompt} {("positive" if few_shot["label"] == "1" else "negative")}\n'  
     
     def _create_prompt(self, example):
         input_prompt =  f'{self.prefix_prompt} {example["sentence"]} {self.postfix_prompt}'
@@ -50,7 +50,13 @@ class SENTIMENT_ANALYSIS_Eval():
 
     def evaluate(self, gen_len = 3, print_logs = False):
         positive_tok, negative_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['positive', 'negative'])
+
+        if 'llama-2' in self.model.config._name_or_path.lower():
+            positive_tok = positive_tok[2:]
+            negative_tok = negative_tok[2:]
+
         positive_len, negative_len = (len(n) for n in [positive_tok, negative_tok])
+        suffixes = {0: ['positive', positive_tok, positive_len], 1: ['negative', negative_tok, negative_len]}
 
         correct = 0
         incorrect = 0
@@ -72,8 +78,12 @@ class SENTIMENT_ANALYSIS_Eval():
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
-            max_len = input_prompt_ids.shape[1] + gen_len
+            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
 
+            if 'llama-2' in self.model.config._name_or_path.lower():
+                prefix_tok_len = prefix_tok_len - 1
+
+            max_len = input_prompt_ids.shape[1] + gen_len
             output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
             generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
 
@@ -82,35 +92,35 @@ class SENTIMENT_ANALYSIS_Eval():
             labels.append(label)
 
             #### EVALUATE NEW ACC 
-            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
+            probs = [0 for _ in suffixes.keys()]
+            gen_texts = [0 for _ in suffixes.keys()]
 
-            prompt_tok = self.tokenizer([f"{input_prompt} {suffix}" for suffix in ['positive', 'negative']], return_tensors="pt").to('cuda')
-            logits = self.model(**prompt_tok).logits.to('cuda')
+            for i in range(len(suffixes.keys())):
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}"], return_tensors="pt").to('cuda')
 
-            probs = [0, 0]
-            gen_texts = [0,0]
-            for i in range(2):
-                cur_len = positive_len if i % 2 == 0 else negative_len
+                with torch.no_grad():
+                    logits = self.model(**prompt_tok).logits    #the model takes in a list of prompts. logits = a x b x c where a is the number of prompts. Then bxc is the output logits. 
+
+                if 'llama-2' in self.model.config._name_or_path.lower():
+                    logits = logits[:, 1:, :]
+
+                cur_len = suffixes[i][2]
 
                 for j in range(cur_len):
-                    cur_tok = (positive_tok if i % 2 == 0 else negative_tok)[j]
+                    cur_tok = suffixes[i][1][j]
                     probs[i] += -torch.nn.functional.log_softmax(
-                    logits[i, prefix_tok_len + j - 1, :], dim=0
+                    logits[0, prefix_tok_len + j - 1, :], dim=0
                     )[cur_tok].item()
                 probs[i] /= cur_len
-
-                gen_texts[i] = self.tokenizer.decode(logits[i, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
+                gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
 
             prob_true = np.exp(-probs[0])
             prob_false = np.exp(-probs[1])  
 
-            gen_text1 = gen_texts[0]
-            gen_text2 = gen_texts[1]
-
             print(f"prob_positive: {prob_true}, prob_negative: {prob_false}")
 
-            
-            predictions_new.append(1 if prob_true > prob_false else 0)
+            answer_new = 1 if prob_true > prob_false else 0
+            predictions_new.append(answer_new)
             print(f"prediction: {answer}, true: {label}")
             if answer == -1:
                 invalid += 1
@@ -134,16 +144,14 @@ class SENTIMENT_ANALYSIS_Eval():
 
             exp_temp_dict = {
                 'sentence': sentence,
-                'label': label,
+                'label': 'positive' if label == 1 else 'negative',
                 'input_prompt': input_prompt_text,
                 'generated_text': generated_text.replace(input_prompt_text, ''),
-                'answer': answer,
+                'correct': answer == label,
                 'prob_true': prob_true,
                 'prob_false': prob_false,
-                'gen_text_new': gen_text1,
-                'answer_new': 1 if prob_true > prob_false else 0,
-                'correct': answer == label,
-                'invalid': True if answer == -1 else False
+                'answer_new':'positive' if answer_new == 1 else 'negative',
+                'correct_new': answer_new == label, 
             }
             stored_generations.append(exp_temp_dict)
 
@@ -158,12 +166,15 @@ class SENTIMENT_ANALYSIS_Eval():
         end = time.time()
         mcc = matthews_corrcoef(labels, predictions)
         f1 = f1_score(labels, predictions, average='weighted')
+        f1_new = f1_score(labels, predictions_new, average='weighted')
+
         result_dict = {
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
             'total': s+1,
             'f1': f1,
+            'f1_new': f1_new,
             'mcc': mcc,
             'time': end-start,
         }
