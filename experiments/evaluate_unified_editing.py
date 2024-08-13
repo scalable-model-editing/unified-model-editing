@@ -62,7 +62,7 @@ def main(
     save_location: str,
     gpt_paraphrase: bool,
     downstream_tasks: str,
-    number_of_few_shots: int,
+    number_of_few_shots: str,
     number_of_tests: int,
     dir_name: str,
     num_edits: int = 1,
@@ -214,13 +214,53 @@ def main(
         )
         etc_args = dict(cache_template=cache_template) if any(alg in alg_name for alg in ["ROME", "MEMIT"]) else dict()
 
+                ##decode the number of few shots
+
+        downstream_tasks_list = downstream_tasks.split(",")
+
+        number_of_few_shots_str_list = number_of_few_shots.split(",")
+
+        number_of_few_shots_dict = {}
+
+        if len(number_of_few_shots_str_list) == 1 and number_of_few_shots_str_list[0] == "-1":
+
+            ## this is the default case
+
+            ## if the user didn't specify the number of few shots, then it will be defualt to be the string of -1
+
+            ## in that case, we shoudl assune that all of the few shots per tasks is zero
+
+            number_of_few_shots_list = [0 for _ in range(len(downstream_tasks_list))]
+
+        else:
+
+            assert len(number_of_few_shots_str_list) == len(downstream_tasks_list), f"Error, if you have {len(downstream_tasks_list)} number of downstream tasks, you should also specify that many few shot examples for each downstream tasks, but we received only {len(number_of_few_shots_str_list)} of few shot examples assigned"
+
+            number_of_few_shots_list = []
+
+            for item in number_of_few_shots_str_list:
+
+                try:
+
+                    converted_item = int(item)
+
+                    number_of_few_shots_list.append(converted_item)
+
+                except ValueError:
+
+                    raise ValueError(f"Error: '{item}' cannot be converted to an integer. the few shot example number must be an integer")
+
+        for i, downstream in enumerate(downstream_tasks_list):
+
+            number_of_few_shots_dict[downstream + "_number_of_few_shots"] = number_of_few_shots_list[i]
+
 
         if r == 0:#do initial GLUE EVAL WITH ORIGINAL MODEL
             glue_results = {'edit_num': -1}
 
             out_file = glue_save_location + "base.json"
             if (num_edits > 1 and args.do_downstream_eval) or args.sequential:
-                glue_eval = GLUEEval(model, tok, number_of_tests, number_of_few_shots)
+                glue_eval = GLUEEval(model, tok, number_of_tests, **number_of_few_shots_dict)
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
                 glue_results = glue_eval.evaluate(glue_results, out_file, *flags)
 
@@ -288,7 +328,7 @@ def main(
 
             out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
             if (args.sequential or num_edits > 1) and args.do_downstream_eval:
-                glue_eval = GLUEEval(edited_model, tok, number_of_tests, number_of_few_shots)
+                glue_eval = GLUEEval(edited_model, tok, number_of_tests, **number_of_few_shots_dict)
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
                 glue_results = glue_eval.evaluate(glue_results, out_file, *flags)
             
@@ -532,8 +572,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--number_of_few_shots",
-        type=int,
-        default=0,
+        type=str,
+        default="-1",
         required=False,
     )
     parser.add_argument(

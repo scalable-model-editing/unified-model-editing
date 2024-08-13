@@ -29,10 +29,11 @@ class SENTIMENT_ANALYSIS_Eval():
         self.few_shot_context = ""
         for _, few_shot in enumerate(self.few_shots):
             self.few_shot_context += f'{self.prefix_prompt} {few_shot["sentence"]} {self.postfix_prompt} {("positive" if few_shot["label"] == "1" else "negative")}\n'  
+        print(self.few_shot_context)
     
     def _create_prompt(self, example):
         input_prompt =  f'{self.prefix_prompt} {example["sentence"]} {self.postfix_prompt}'
-        return input_prompt, example['sentence'], self._get_label(example['label'])
+        return input_prompt, example['sentence'], int(example['label'])
     
     def _get_answer(self, generated_text):
         answer_text = generated_text.split(self.postfix_prompt)[-1].strip().strip()
@@ -43,10 +44,11 @@ class SENTIMENT_ANALYSIS_Eval():
             return 0
         return -1
 
-    def _get_label(self, example_label):
-        if 'positive' == example_label:
-            return 1
-        return 0
+
+    # def _get_label(self, example_label):
+    #     if 'positive' == example_label:
+    #         return 1
+    #     return 0
 
     def evaluate(self, gen_len = 3, print_logs = False):
         positive_tok, negative_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['positive', 'negative'])

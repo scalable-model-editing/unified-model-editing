@@ -2,6 +2,7 @@
 *.pyc
 *.safetensors
 *.npz
+.gitignore
 *.npy
 cross_entropy_loss.py
 *.yaml
@@ -31,3 +32,4 @@ baselines/mend/data_classes/nq.py
 baselines/mend/data_classes/wiki.py
 baselines/mend/data_classes/zsre.py
 glue_eval/dataset/create_glue_subset.py
+
