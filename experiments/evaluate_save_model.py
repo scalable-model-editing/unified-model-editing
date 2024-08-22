@@ -19,7 +19,8 @@ from dsets import (
     MultiCounterFactDataset,
     get_tfidf_vectorizer,
 )
-from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
+### changed eval_utils_counterfact to eval_utils_counterfact2
+from experiments.py.eval_utils_counterfact_token_entropy import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from memit import MEMITHyperParams, apply_memit_to_model
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -60,9 +61,8 @@ def main(
     save_model: bool,
     save_interval: int,
     save_location: str,
+    gpt_paraphrase: bool,
     downstream_tasks: str,
-    number_of_few_shots: str,
-    number_of_tests: int,
     dir_name: str,
     num_edits: int = 1,
     use_cache: bool = False,
@@ -92,6 +92,7 @@ def main(
         run_dir = RESULTS_DIR / dir_name / f"run_{str(run_id).zfill(3)}"
         run_dir.mkdir(parents=True, exist_ok=True)
     print(f"Results will be stored at {run_dir}")
+
 
     # Get run hyperparameters
     params_path = (
@@ -131,22 +132,22 @@ def main(
         tok = AutoTokenizer.from_pretrained(local_models[model_name])
         tok.pad_token = tok.eos_token
 
+        #store initial weights of the model
         original_weights = extract_model_original_weights(original_model, hparams)
         del original_model
-
-    if save_model:
+    
+    
+    #Save model
+    if False:
         print("Model storage location provided at " + save_location)
         model_save_folder = save_location + '/edits_0'
         os.makedirs(model_save_folder)
         model.save_pretrained(model_save_folder)
-
+    
     # Load data
     print("Loading dataset, attribute snippets, tf-idf data")
     snips = AttributeSnippets(DATA_DIR) if not skip_generation_tests else None
     vec = get_tfidf_vectorizer(DATA_DIR) if not skip_generation_tests else None
-
-    #if num_edits > 1:
-    #    assert ds_name != "cf", f"{ds_name} does not support multiple edits"
 
     ds_class, ds_eval_method = DS_DICT[ds_name]
     ds = ds_class(DATA_DIR, tok=tok, size=dataset_size_limit)
@@ -168,7 +169,7 @@ def main(
 
     #load indices file and initialize dataset class
     if ds_name in 'cf':
-        indices_filename = 'data/counterfact_sampled_unique_cf_10_20000.json'
+        indices_filename = 'data/counterfact_sampled_unique_cf_20_2000.json'
         dataset = CounterFactDataset('data')
     if ds_name in 'mcf':
         indices_filename = 'data/counterfact_sampled_unique_mcf_10_20000.json'
@@ -182,7 +183,10 @@ def main(
 
     # Iterate through dataset
     for r, e in enumerate(range(0, len(sampled_indices[args.sample_num]), num_edits)):
+
         record_chunks = []
+        """ sample_indices is a dictionary with key == sample_num, value = list of indices in that sample """
+        """ num_edits is the number of edits to make"""
         for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
             datapoint = dataset.__getitem__(element_index)
             record_chunks.append(datapoint)
@@ -209,72 +213,33 @@ def main(
         )
         etc_args = dict(cache_template=cache_template) if any(alg in alg_name for alg in ["ROME", "MEMIT"]) else dict()
 
-                ##decode the number of few shots
-        if args.do_downstream_eval and downstream_tasks is None:
-            raise ValueError("No downstream tasks were provided.")
-
-        if args.do_downstream_eval:
-            downstream_tasks_list = downstream_tasks.split(",")
-
-            number_of_few_shots_str_list = number_of_few_shots.split(",")
-
-            number_of_few_shots_dict = {}
-
-            if len(number_of_few_shots_str_list) == 1 and number_of_few_shots_str_list[0] == "-1":
-
-            ## this is the default case
-
-            ## if the user didn't specify the number of few shots, then it will be defualt to be the string of -1
-
-            ## in that case, we shoudl assune that all of the few shots per tasks is zero
-
-                number_of_few_shots_list = [0 for _ in range(len(downstream_tasks_list))]
-
-            else:
-
-                assert len(number_of_few_shots_str_list) == len(downstream_tasks_list), f"Error, if you have {len(downstream_tasks_list)} number of downstream tasks, you should also specify that many few shot examples for each downstream tasks, but we received only {len(number_of_few_shots_str_list)} of few shot examples assigned"
-
-                number_of_few_shots_list = []
-
-                for item in number_of_few_shots_str_list:
-
-                    try:
-
-                        converted_item = int(item)
-
-                        number_of_few_shots_list.append(converted_item)
-
-                    except ValueError:
-
-                        raise ValueError(f"Error: '{item}' cannot be converted to an integer. the few shot example number must be an integer")
-
-            for i, downstream in enumerate(downstream_tasks_list):
-
-                number_of_few_shots_dict[downstream + "_number_of_few_shots"] = number_of_few_shots_list[i]
-
 
         if r == 0:#do initial GLUE EVAL WITH ORIGINAL MODEL
             glue_results = {'edit_num': -1}
 
             out_file = glue_save_location + "base.json"
-            if (num_edits >= 1 and args.do_downstream_eval):
-                glue_eval = GLUEEval(model, tok, number_of_tests, **number_of_few_shots_dict)
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, True, *flags)
+            #if num_edits > 1 and args.do_downstream_eval:
+            if args.do_downstream_eval:
+                glue_eval = GLUEEval(model, tok)
+                llama = "Llama" in model_name
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
+                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, *flags)
+
 
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
             with open(output_filename, "w") as f:
                 json.dump(glue_results, f, indent=4)
-        
-        gen_test_vars = [snips, vec]        
+
+
+        gen_test_vars = [snips, vec]
         for record in record_chunks:
             out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
             if out_file.exists():
                 print(f"Skipping {out_file}; already exists")
                 continue
-
-
+            
+            
             metrics = {
                 "case_id": record["case_id"],
                 "grouped_case_ids": case_ids,
@@ -284,6 +249,8 @@ def main(
                     model,
                     tok,
                     record,
+                    gpt_paraphrase,
+                    llama,
                     *(
                         gen_test_vars
                         if record["case_id"] % generation_test_interval == 0
@@ -291,16 +258,25 @@ def main(
                     ),
                 )
             }
+
+            # Dump metrics in .json
             with open(out_file, "w") as f:
                 json.dump(metrics, f, indent=1)
 
+
         start = time()
+
+        """
+        params_class, apply_algo = ALG_DICT[alg_name]
+        from rome import ROMEHyperParams, apply_rome_to_model
+        """
+
         edited_model, weights_copy, objective_distances = apply_algo(
             model,
             tok,
             [
                 {"case_id": record["case_id"], **record["requested_rewrite"]}
-                for record in record_chunks
+                for record in record_chunks                    
             ],
             hparams,
             copy=False,
@@ -324,11 +300,14 @@ def main(
                 'objective_distances': objective_distances,
                 }
 
-            out_file = glue_save_location + "{}_case_{}.json".format(r, record["case_id"])#stores the last case ID of the batch
-            if (args.sequential or num_edits >= 1) and args.do_downstream_eval:
-                glue_eval = GLUEEval(edited_model, tok, number_of_tests, **number_of_few_shots_dict)
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, True, *flags)
+            out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
+            #if num_edits > 1 and args.do_downstream_eval:
+            if args.do_downstream_eval:
+                glue_eval = GLUEEval(edited_model, tok)
+                llama = "Llama" in model_name
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte']]
+                glue_results = glue_eval.evaluate(glue_results, out_file, llama = llama, *flags)
+                print(f"GLUEEEEEEEEEE {glue_results}")
             
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
@@ -346,15 +325,18 @@ def main(
                 data['time'] = exec_time,
 
                 post_list = ds_eval_method(
-                    edited_model,
+                    edited_model, 
                     tok,
                     record,
+                    gpt_paraphrase,
+                    llama,
                     *(
                         gen_test_vars
                         if record["case_id"] % generation_test_interval == 0
                         else [None, None]
                     ),
                 )
+
                 for key, value in post_list.items():
                     if key in ["paraphrase_prompts_probs", "neighborhood_prompts_probs", "rewrite_prompts_probs", "attribute_prompts_probs"]:
                         for i in range(len(data['post'][key])):
@@ -362,12 +344,14 @@ def main(
                             data['post'][key][i]['post_sliding_correct'] = post_list[key][i]['sliding_correct']
                             data['post'][key][i]['post_target_new_prob'] = post_list[key][i]['target_new_prob']
                             data['post'][key][i]['post_target_true_prob'] = post_list[key][i]['target_true_prob']
-                    if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy", "essence_score"]:
+                    if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy"]:
                         data['post']['post_' + key] = post_list[key]
+
 
                 f.seek(0)        # <--- should reset file position to the beginning.
                 json.dump(data, f, indent=4)
                 f.truncate()
+
 
         if not sequential:
             # Restore original weights
@@ -377,14 +361,15 @@ def main(
 
         print("Evaluation took", time() - start)
 
+
         ## Saving model
         if save_model and (r + 1) % save_interval == 0:
             print("Model storage location provided at " + save_location)
             model_save_folder = save_location + '/edits_' + str(r + 1)
             os.makedirs(model_save_folder)
             model.save_pretrained(model_save_folder)
-        
 
+        
 def extract_model_original_weights(model, hparams):
     weights = {
         f"{hparams.rewrite_module_tmp.format(layer)}.weight": nethook.get_parameter(
@@ -510,7 +495,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_edits",
         type=int,
-        default=1,
+        default=4,
         help="Number of rewrites to perform simultaneously.",
     )
     parser.add_argument(
@@ -528,7 +513,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--downstream_eval_steps",
         type=int,
-        default=100,
+        default=1,
         help="If we want to do sequential editing or not",
     )
     parser.add_argument(
@@ -553,7 +538,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save_model_location",
         type=str,
-        default='/data/christinefang/unified-model-editing/models/',
+        default="model_location",
+        required=False,
+    )
+    parser.add_argument(
+        "--gpt_paraphrase",
+        type=bool,
+        default=False,
         required=False,
     )
     parser.add_argument(
@@ -561,18 +552,8 @@ if __name__ == "__main__":
         type=str,
         required=False,
     )
-    parser.add_argument(
-        "--number_of_few_shots",
-        type=str,
-        default="-1",
-        required=False,
-    )
-    parser.add_argument(
-        "--number_of_tests",
-        type=int,
-        default=None,
-        required=False,
-    )
+
+
 
     parser.set_defaults(skip_generation_tests=False, conserve_memory=False)
     args = parser.parse_args()
@@ -593,9 +574,8 @@ if __name__ == "__main__":
         args.save_model,
         args.save_model_interval,
         args.save_model_location,
+        args.gpt_paraphrase,
         args.downstream_tasks,
-        args.number_of_few_shots,
-        args.number_of_tests,
         dir_name=args.alg_name,
         num_edits=args.num_edits,
         use_cache=args.use_cache,

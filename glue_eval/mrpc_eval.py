@@ -1,80 +1,78 @@
 from datasets import load_metric, load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from sklearn.metrics import matthews_corrcoef, f1_score
-from glue_eval.useful_functions import load_data
+from glue_eval.useful_functions import load_data, load_data_split, MODEL_NAME_TO_MAXIMUM_CONTEXT_LENGTH_MAP
 import time
+import torch
+import numpy as np
+
+MAX_NUMBER_OF_FEW_SHOTS = 100
 
 class MRPCEval():
-    def __init__(self, model, tokenizer, eval_split = 'validation'):
+    def __init__(self, model, tokenizer, number_of_tests = None, number_of_few_shots = 0, eval_split = 'validation'):
+        assert number_of_few_shots < MAX_NUMBER_OF_FEW_SHOTS, f"The number of few shots should not exceed {number_of_few_shots}"
+        self.number_of_tests = number_of_tests
+        self.number_of_few_shots = number_of_few_shots
         self.model = model
         self.tokenizer = tokenizer
-
-        #initialize dataset
-        #dataset = load_dataset("glue", "mrpc")
-        #self.eval_dataset = dataset[eval_split]
-        self.eval_dataset = load_data('glue_eval/dataset/mrpc.pkl') 
-
+        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/mrpc.pkl',  number_of_few_shots, number_of_tests)
         self._initialize_prompts()
 
 
     def _initialize_prompts(self):
-        #self.few_shot_context = open('prompts/mrpc_1.txt', 'r').read()
-        self.few_shot_context = '''\
-Are the sentences paraphrases of each other.
-Sentence 1: Mr McDevitt has been granted control of three crucial aspects of policing in the Solomons.
-Sentence 2: Mr McDevitt has been granted control of three aspects of policing by Commissioner William Morrell.
-Answer: No
-
-Are the sentences paraphrases of each other.
-Sentence 1: They had published an advertisement on the Internet on June 10, offering the cargo for sale, he added.
-Sentence 2: On June 10, the ship's owners had published an advertisement on the Internet, offering the explosives for sale.
-Answer: Yes
-
-Are the sentences paraphrases of each other.
-Sentence 1: In 2002, Linksys overtook Cisco Systems as the leading wireless equipment vendor, accounting for 14.1 percent of revenue.
-Sentence 2: Rolfe said Linksys overtook Cisco Systems last year as the leading supplier of WLAN equipment.
-Answer: No
-
-Are the sentences paraphrases of each other.
-Sentence 1: The notification was first reported Friday by MSNBC.
-Sentence 2: MSNBC.com first reported the CIA request on Friday.
-Answer: Yes
-
-Are the sentences paraphrases of each other.
-Sentence 1: "The anticipated global sales improvement in the month of June did not materialize", said Chief Financial Officer Robert Rivet.
-Sentence 2: "The anticipated global sales improvement in the month of June did not materialize as we had anticipated", the company said.
-Answer: Yes
-
-Are the sentences paraphrases of each other.
-Sentence 1: That compared with $ 35.18 million, or 24 cents per share, in the year-ago period.
-Sentence 2: Earnings were affected by a non-recurring $8 million tax benefit in the year-ago period.
-Answer: No
-
-'''
         self.prefix_prompt = 'Are the sentences paraphrases of each other.\n'
-        self.postfix_prompt = 'Answer:' 
+        self.postfix_prompt = 'Answer:'
+        self.few_shot_context = []
+        for _, few_shot in enumerate(self.few_shots):
+            self.few_shot_context.append(f"{self.prefix_prompt}Sentence 1: {few_shot['sentence1']}\nSentence 2: {few_shot['sentence2']}\nAnswer: {'No' if few_shot['label'] == 0 else 'Yes'}\n")
 
-    def _create_prompt(self, example):
+    # def _create_prompt(self, example):
+    #     prompt = 'Sentence 1: ' + example['sentence1'] + '\n'
+    #     prompt += 'Sentence 2: ' + example['sentence2'] + '\n'
+
+    #     input_prompt = self.few_shot_context + self.prefix_prompt + prompt + self.postfix_prompt
+
+    #     return input_prompt, example['sentence1'], example['sentence2'], example['label']
+    
+    def _create_prompt(self, example, gen_len):
         prompt = 'Sentence 1: ' + example['sentence1'] + '\n'
         prompt += 'Sentence 2: ' + example['sentence2'] + '\n'
-
-        input_prompt = self.few_shot_context + self.prefix_prompt + prompt + self.postfix_prompt
-
+        question = self.prefix_prompt + prompt + self.postfix_prompt
+        question_token_length = len(self.tokenizer(question)["input_ids"])
+        remaining_token_length = MODEL_NAME_TO_MAXIMUM_CONTEXT_LENGTH_MAP[self.model.config._name_or_path.lower().split('/')[-1]] - question_token_length - gen_len
+        actual_few_shot = ""
+        for few_shot in self.few_shot_context:
+            few_shot_token_length = len(self.tokenizer(few_shot)["input_ids"])
+            remaining_token_length -= few_shot_token_length
+            if remaining_token_length < 0:
+                break 
+            actual_few_shot += few_shot
+        input_prompt = actual_few_shot + question
         return input_prompt, example['sentence1'], example['sentence2'], example['label']
 
 
     def _get_answer(self, generated_text):
         answer_text = generated_text.split(self.postfix_prompt)[-1].strip().strip()
 
-        if 'Yes' in answer_text:
+        if 'yes' in answer_text.lower():
             return 1
-        elif 'No' in answer_text:
+        elif 'no' in answer_text.lower():
             return 0
 
         return -1
 
 
     def evaluate(self, gen_len = 3, print_logs = False):
+        yes_tok, no_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['Yes', 'No'])
+
+        if 'llama-2' in self.model.config._name_or_path.lower():
+            yes_tok = yes_tok[2:]
+            no_tok = no_tok[2:]
+
+        yes_len, no_len = (len(n) for n in [yes_tok, no_tok])
+
+        suffixes = {0: ['Yes', yes_tok, yes_len], 1: ['No', no_tok, no_len]}
+
         correct = 0
         incorrect = 0
         invalid = 0
@@ -86,21 +84,62 @@ Answer: No
 
         predictions = []
         labels = []
+        predictions_new = []
         stored_generations = []
         start = time.time()
+
         for s, example in enumerate(self.eval_dataset):
-            input_prompt, sentence1, sentence2, label = self._create_prompt(example)
+
+            input_prompt, sentence1, sentence2, label = self._create_prompt(example, gen_len)
+            print(input_prompt)
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
-            max_len = input_prompt_ids.shape[1] + gen_len
+            prefix_tok_len = len(self.tokenizer(input_prompt)["input_ids"])
 
+            if 'llama-2' in self.model.config._name_or_path.lower():
+                prefix_tok_len = prefix_tok_len - 1
+
+            max_len = input_prompt_ids.shape[1] + gen_len
             output = self.model.generate(input_prompt_ids,max_length = max_len, do_sample = False)
             generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-
             answer = self._get_answer(generated_text)
+
             predictions.append(answer)
             labels.append(label)
+
+            #### EVALUATE NEW F1 
+            probs = [0 for _ in suffixes.keys()]
+            gen_texts = [0 for _ in suffixes.keys()]
+
+            for i in range(len(suffixes.keys())):
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}"], return_tensors="pt").to('cuda')
+
+                with torch.no_grad():
+                    logits = self.model(**prompt_tok).logits
+
+                if 'llama-2' in self.model.config._name_or_path.lower():
+                    logits = logits[:, 1:, :]
+
+
+                cur_len = suffixes[i][2]
+
+                for j in range(cur_len):
+                    cur_tok = suffixes[i][1][j]
+                    probs[i] += -torch.nn.functional.log_softmax(
+                    logits[0, prefix_tok_len + j - 1, :], dim=0
+                    )[cur_tok].item()
+                probs[i] /= cur_len
+                
+                gen_texts[i] = self.tokenizer.decode(logits[0, prefix_tok_len - 1 : prefix_tok_len + cur_len - 1, :].argmax(dim = -1))
+
+
+            prob_yes = np.exp(-probs[0])
+            prob_no = np.exp(-probs[1])
+
+            answer_new =  1 if prob_yes > prob_no else 0
+            predictions_new.append(answer_new)
+
             if answer == -1:
                 invalid += 1
             else:
@@ -122,15 +161,18 @@ Answer: No
                         neg_incorrect += 1
 
             exp_temp_dict = {
-                'sentence1': sentence1,
-                'sentence2': sentence2,
-                'label': label,
+                'sentence1': sentence1, 
+                'sentence2': sentence2, 
                 'input_prompt': input_prompt_text,
+                'true_answer': 'Yes' if label == 1 else 'No',
                 'generated_text': generated_text.replace(input_prompt_text, ''),
                 'answer': answer,
                 'correct': answer == label,
-                'invalid': True if answer == -1 else False
-            }
+                'prob_yes': prob_yes,
+                'prob_no': prob_no,
+                'highest_probability_answer': 'Yes' if answer_new == 1 else 'No', 
+                'correct_new': answer_new == label,
+                }
             stored_generations.append(exp_temp_dict)
 
             if print_logs:
@@ -144,12 +186,14 @@ Answer: No
         end = time.time()
         mcc = matthews_corrcoef(labels, predictions)
         f1 = f1_score(labels, predictions, average='weighted')
+        f1_new = f1_score(labels, predictions_new, average='weighted')
         result_dict = {
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
             'total': s+1,
             'f1': f1,
+            'f1_new': f1_new,
             'mcc': mcc,
             'time': end-start,
         }
@@ -167,3 +211,5 @@ if __name__ == '__main__':
 
     mrpc_eval = MRPCEval(model, tokenizer)
     mrpc_eval.evaluate(print_logs='True')
+    
+    
