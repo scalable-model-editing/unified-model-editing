@@ -1,12 +1,12 @@
 from datasets import load_metric, load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from sklearn.metrics import matthews_corrcoef, f1_score, precision_recall_fscore_support
-from glue_eval.useful_functions import load_data, load_data_split
+from glue_eval.useful_functions import load_data, load_data_split, MODEL_NAME_TO_MAXIMUM_CONTEXT_LENGTH_MAP
 import time
 import torch
 import numpy as np
 
-MAX_NUMBER_OF_FEW_SHOTS = 50
+MAX_NUMBER_OF_FEW_SHOTS = 100
 
 class RTEEval():
 
@@ -16,33 +16,47 @@ class RTEEval():
         self.number_of_few_shots = number_of_few_shots
         self.model = model
         self.tokenizer = tokenizer
-        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/rte.pkl', number_of_few_shots)
-        self.eval_dataset = self.eval_dataset[:number_of_tests] if not (number_of_tests is None) else self.eval_dataset
-
+        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/rte.pkl', number_of_few_shots, number_of_tests)
         self._initialize_prompts()
 
 
     def _initialize_prompts(self):
         self.prefix_prompt = ''
         self.postfix_prompt = 'answer:'
-        self.few_shot_context = ""
+        self.few_shot_context = []
         for _, few_shot in enumerate(self.few_shots):
-            self.few_shot_context += f"{few_shot['sentence1']}\nquestion: {few_shot['sentence2']} True or False?\nanswer: {'False' if few_shot['label'] == 0 else 'True'}\n"
+            self.few_shot_context.append(f"{few_shot['sentence1']}\nquestion: {few_shot['sentence2']} True or False?\nanswer: {'False' if few_shot['label'] == 0 else 'True'}\n")
 
-    def _create_prompt(self, example):
+    # def _create_prompt(self, example):
+    #     prompt = example['sentence1'] + '\n'
+    #     prompt += 'question: ' + example['sentence2'] + ' True or False?'  + '\n'
+
+    #     input_prompt = self.few_shot_context + self.prefix_prompt + prompt + self.postfix_prompt
+
+    #     return input_prompt
+
+    def _create_prompt(self, example, gen_len):
         prompt = example['sentence1'] + '\n'
         prompt += 'question: ' + example['sentence2'] + ' True or False?'  + '\n'
-
-        input_prompt = self.few_shot_context + self.prefix_prompt + prompt + self.postfix_prompt
-
+        question = self.prefix_prompt + prompt + self.postfix_prompt
+        question_token_length = len(self.tokenizer(question)["input_ids"])
+        remaining_token_length = MODEL_NAME_TO_MAXIMUM_CONTEXT_LENGTH_MAP[self.model.config._name_or_path.lower().split('/')[-1]] - question_token_length - gen_len
+        actual_few_shot = ""
+        for few_shot in self.few_shot_context:
+            few_shot_token_length = len(self.tokenizer(few_shot)["input_ids"])
+            remaining_token_length -= few_shot_token_length
+            if remaining_token_length < 0:
+                break 
+            actual_few_shot += few_shot
+        input_prompt = actual_few_shot + question
         return input_prompt
     
     def _get_answer(self, generated_text):
         answer_text = generated_text.split('answer:')[-1].strip().strip()
 
-        if 'False' in answer_text:
+        if 'false' in answer_text.lower():
             return 0
-        elif 'True' in answer_text:
+        elif 'true' in answer_text.lower():
             return 1
 
         return -1
@@ -77,7 +91,8 @@ class RTEEval():
             sentence2 = element['sentence2']
             label = element['label']
 
-            input_prompt = self._create_prompt(element)
+            input_prompt = self._create_prompt(element, gen_len)
+            print(input_prompt)
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
@@ -151,10 +166,11 @@ class RTEEval():
                 'label': 'True' if label == 1 else 'False',
                 'input_prompt': input_prompt_text,
                 'generated_text': generated_text.replace(input_prompt_text, ''),
+                'answer': answer,
                 'correct': answer == label,
                 'prob_yes': prob_yes,
                 'prob_no': prob_no,
-                'answer_new': 'True' if answer_new == 1 else 'False',
+                'highest_probability_answer': 'True' if answer_new == 1 else 'False',
                 'correct_new': answer_new == label,                
             }
             stored_generations.append(exp_temp_dict)

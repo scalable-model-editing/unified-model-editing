@@ -31,7 +31,7 @@ classwise_size = 100
 #     save_data(dataset_name + '.pkl', finalized_subset)
 
 
-dataset = load_dataset("nyu-mll/glue", "sst2")
+dataset = load_dataset("glue", "sst2")
 eval_dataset = dataset['validation']
 
 classwise = {}

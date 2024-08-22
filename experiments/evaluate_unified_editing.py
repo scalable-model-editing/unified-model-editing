@@ -60,7 +60,6 @@ def main(
     save_model: bool,
     save_interval: int,
     save_location: str,
-    gpt_paraphrase: bool,
     downstream_tasks: str,
     number_of_few_shots: str,
     number_of_tests: int,
@@ -132,10 +131,9 @@ def main(
         tok = AutoTokenizer.from_pretrained(local_models[model_name])
         tok.pad_token = tok.eos_token
 
-        #store initial weights of the model
         original_weights = extract_model_original_weights(original_model, hparams)
         del original_model
-    
+
     if save_model:
         print("Model storage location provided at " + save_location)
         model_save_folder = save_location + '/edits_0'
@@ -189,9 +187,6 @@ def main(
             datapoint = dataset.__getitem__(element_index)
             record_chunks.append(datapoint)
 
-        if r == 2200:
-            break
-
         case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
 
         # Is the chunk already done?
@@ -215,14 +210,17 @@ def main(
         etc_args = dict(cache_template=cache_template) if any(alg in alg_name for alg in ["ROME", "MEMIT"]) else dict()
 
                 ##decode the number of few shots
+        if args.do_downstream_eval and downstream_tasks is None:
+            raise ValueError("No downstream tasks were provided.")
 
-        downstream_tasks_list = downstream_tasks.split(",")
+        if args.do_downstream_eval:
+            downstream_tasks_list = downstream_tasks.split(",")
 
-        number_of_few_shots_str_list = number_of_few_shots.split(",")
+            number_of_few_shots_str_list = number_of_few_shots.split(",")
 
-        number_of_few_shots_dict = {}
+            number_of_few_shots_dict = {}
 
-        if len(number_of_few_shots_str_list) == 1 and number_of_few_shots_str_list[0] == "-1":
+            if len(number_of_few_shots_str_list) == 1 and number_of_few_shots_str_list[0] == "-1":
 
             ## this is the default case
 
@@ -230,46 +228,46 @@ def main(
 
             ## in that case, we shoudl assune that all of the few shots per tasks is zero
 
-            number_of_few_shots_list = [0 for _ in range(len(downstream_tasks_list))]
+                number_of_few_shots_list = [0 for _ in range(len(downstream_tasks_list))]
 
-        else:
+            else:
 
-            assert len(number_of_few_shots_str_list) == len(downstream_tasks_list), f"Error, if you have {len(downstream_tasks_list)} number of downstream tasks, you should also specify that many few shot examples for each downstream tasks, but we received only {len(number_of_few_shots_str_list)} of few shot examples assigned"
+                assert len(number_of_few_shots_str_list) == len(downstream_tasks_list), f"Error, if you have {len(downstream_tasks_list)} number of downstream tasks, you should also specify that many few shot examples for each downstream tasks, but we received only {len(number_of_few_shots_str_list)} of few shot examples assigned"
 
-            number_of_few_shots_list = []
+                number_of_few_shots_list = []
 
-            for item in number_of_few_shots_str_list:
+                for item in number_of_few_shots_str_list:
 
-                try:
+                    try:
 
-                    converted_item = int(item)
+                        converted_item = int(item)
 
-                    number_of_few_shots_list.append(converted_item)
+                        number_of_few_shots_list.append(converted_item)
 
-                except ValueError:
+                    except ValueError:
 
-                    raise ValueError(f"Error: '{item}' cannot be converted to an integer. the few shot example number must be an integer")
+                        raise ValueError(f"Error: '{item}' cannot be converted to an integer. the few shot example number must be an integer")
 
-        for i, downstream in enumerate(downstream_tasks_list):
+            for i, downstream in enumerate(downstream_tasks_list):
 
-            number_of_few_shots_dict[downstream + "_number_of_few_shots"] = number_of_few_shots_list[i]
+                number_of_few_shots_dict[downstream + "_number_of_few_shots"] = number_of_few_shots_list[i]
 
 
         if r == 0:#do initial GLUE EVAL WITH ORIGINAL MODEL
             glue_results = {'edit_num': -1}
 
             out_file = glue_save_location + "base.json"
-            if (num_edits > 1 and args.do_downstream_eval) or args.sequential:
+            if (num_edits >= 1 and args.do_downstream_eval):
                 glue_eval = GLUEEval(model, tok, number_of_tests, **number_of_few_shots_dict)
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, *flags)
+                glue_results = glue_eval.evaluate(glue_results, out_file, True, *flags)
 
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
             with open(output_filename, "w") as f:
                 json.dump(glue_results, f, indent=4)
         
-        gen_test_vars = [snips, vec]
+        gen_test_vars = [snips, vec]        
         for record in record_chunks:
             out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
             if out_file.exists():
@@ -326,11 +324,11 @@ def main(
                 'objective_distances': objective_distances,
                 }
 
-            out_file = glue_save_location + "case_{}.json".format(record["case_id"])#stores the last case ID of the batch
-            if (args.sequential or num_edits > 1) and args.do_downstream_eval:
+            out_file = glue_save_location + "{}_case_{}.json".format(r, record["case_id"])#stores the last case ID of the batch
+            if (args.sequential or num_edits >= 1) and args.do_downstream_eval:
                 glue_eval = GLUEEval(edited_model, tok, number_of_tests, **number_of_few_shots_dict)
                 flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
-                glue_results = glue_eval.evaluate(glue_results, out_file, *flags)
+                glue_results = glue_eval.evaluate(glue_results, out_file, True, *flags)
             
             #store the individual overall result file
             output_filename = out_file.replace('.json', '_glue.json')
@@ -364,9 +362,8 @@ def main(
                             data['post'][key][i]['post_sliding_correct'] = post_list[key][i]['sliding_correct']
                             data['post'][key][i]['post_target_new_prob'] = post_list[key][i]['target_new_prob']
                             data['post'][key][i]['post_target_true_prob'] = post_list[key][i]['target_true_prob']
-                    if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy"]:
+                    if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy", "essence_score"]:
                         data['post']['post_' + key] = post_list[key]
-
 
                 f.seek(0)        # <--- should reset file position to the beginning.
                 json.dump(data, f, indent=4)
@@ -556,13 +553,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save_model_location",
         type=str,
-        default='/data/christinefang/models/',
-        required=False,
-    )
-    parser.add_argument(
-        "--gpt_paraphrase",
-        type=bool,
-        default=False,
+        default='/data/christinefang/unified-model-editing/models/',
         required=False,
     )
     parser.add_argument(
@@ -602,7 +593,6 @@ if __name__ == "__main__":
         args.save_model,
         args.save_model_interval,
         args.save_model_location,
-        args.gpt_paraphrase,
         args.downstream_tasks,
         args.number_of_few_shots,
         args.number_of_tests,

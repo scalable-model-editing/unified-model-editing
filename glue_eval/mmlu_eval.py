@@ -1,13 +1,13 @@
 from datasets import load_metric, load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from sklearn.metrics import matthews_corrcoef, f1_score
-from glue_eval.useful_functions import load_data, load_data_split
+from glue_eval.useful_functions import load_data, load_data_split, MODEL_NAME_TO_MAXIMUM_CONTEXT_LENGTH_MAP
 import math
 import torch
 import time
 import numpy as np
 
-MAX_NUMBER_OF_FEW_SHOTS = 50
+MAX_NUMBER_OF_FEW_SHOTS = 100
 
 class MMLUEval():
     def __init__(self, model, tokenizer, number_of_tests = None, number_of_few_shots = 0, eval_split = 'validation'):
@@ -16,24 +16,20 @@ class MMLUEval():
         self.number_of_few_shots = number_of_few_shots
         self.model = model
         self.tokenizer = tokenizer
-        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/mmlu.pkl', number_of_few_shots)
-        self.eval_dataset = self.eval_dataset[:number_of_tests] if not (number_of_tests is None) else self.eval_dataset
-
+        self.few_shots, self.eval_dataset = load_data_split('glue_eval/dataset/mmlu.pkl', number_of_few_shots, number_of_tests)
         self._initialize_prompts()
 
 
     def _initialize_prompts(self):
         self.glue_prompt = "Question: "
         self.postfix_prompt = 'True or False? answer: '
-        self.few_shot_context = ""
+        self.few_shot_context = []
         for _, few_shot in enumerate(self.few_shots):
             prompta = '(A) ' + few_shot['choices'][0] + '\n'
             promptb = '(B) ' + few_shot['choices'][1] + '\n'
             promptc = '(C) ' + few_shot['choices'][2] + '\n'
             promptd = '(D) ' + few_shot['choices'][3] + '\n'
-            self.few_shot_context += f"Question: {few_shot['question']}\n{prompta + promptb + promptc + promptd}Answer: {self._get_label(few_shot['answer'])}\n"
-        print("FEWWWW_SHOTTT")
-        print(self.few_shot_context)
+            self.few_shot_context.append(f"Question: {few_shot['question']}\n{prompta + promptb + promptc + promptd}Answer: {self._get_label(few_shot['answer'])}\n")
 
     def _get_label(self, example_label):
         if example_label == 0:
@@ -45,32 +41,51 @@ class MMLUEval():
         if example_label == 3:
             return 'D'
     
-    def _create_prompt(self, example):
+    def _create_prompt(self, example, gen_len):
         prompt = 'Question: ' + example['question'] + '\n'
         prompta = '(A) ' + example['choices'][0] + '\n'
         promptb = '(B) ' + example['choices'][1] + '\n'
         promptc = '(C) ' + example['choices'][2] + '\n'
         promptd = '(D) ' + example['choices'][3] + '\n'
-
-        input_prompt = self.few_shot_context + prompt + prompta + promptb + promptc + promptd + 'Answer:'
+        question = prompt + prompta + promptb + promptc + promptd + 'Answer:'
+        question_token_length = len(self.tokenizer(question)["input_ids"])
+        remaining_token_length = MODEL_NAME_TO_MAXIMUM_CONTEXT_LENGTH_MAP[self.model.config._name_or_path.lower().split('/')[-1]] - question_token_length - gen_len
+        actual_few_shot = ""
+        for few_shot in self.few_shot_context:
+            few_shot_token_length = len(self.tokenizer(few_shot)["input_ids"])
+            remaining_token_length -= few_shot_token_length
+            if remaining_token_length < 0:
+                break 
+            actual_few_shot += few_shot
+        input_prompt = actual_few_shot + question
         return input_prompt, example['question'], example['answer']
+    
+    # def _create_prompt(self, example):
+    #     prompt = 'Question: ' + example['question'] + '\n'
+    #     prompta = '(A) ' + example['choices'][0] + '\n'
+    #     promptb = '(B) ' + example['choices'][1] + '\n'
+    #     promptc = '(C) ' + example['choices'][2] + '\n'
+    #     promptd = '(D) ' + example['choices'][3] + '\n'
+
+    #     input_prompt = self.few_shot_context + prompt + prompta + promptb + promptc + promptd + 'Answer:'
+    #     return input_prompt, example['question'], example['answer']
 
     def _get_answer(self, text):
-        if 'A\n' in text:
+        if 'a\n' in text.lower():
             return 0
-        elif 'B\n' in text:
+        elif 'b\n' in text.lower():
             return 1
-        elif 'C\n' in text:
+        elif 'c\n' in text.lower():
             return 2
-        elif 'D\n' in text:
+        elif 'd\n' in text.lower():
             return 3
         return -1
 
     def evaluate(self, gen_len = 10, print_logs = False):
 
-        a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}\n")["input_ids"] for n in ['A', 'B', 'C', 'D'])
+        a_tok, b_tok, c_tok, d_tok = (self.tokenizer(f" {n}")["input_ids"] for n in ['A', 'B', 'C', 'D'])
 
-        if 'llama-2' in self.model.config._name_or_path.lower():
+        if "llama-2" in self.model.config._name_or_path.lower():
             a_tok = a_tok[2:]
             b_tok = b_tok[2:]
             c_tok = c_tok[2:]
@@ -100,7 +115,8 @@ class MMLUEval():
 
         start = time.time()
         for s, example in enumerate(self.eval_dataset):
-            input_prompt, sentence, label = self._create_prompt(example)
+            input_prompt, sentence, label = self._create_prompt(example, gen_len)
+            print(input_prompt)
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
@@ -122,12 +138,12 @@ class MMLUEval():
             gen_texts = [0 for _ in suffixes.keys()]
 
             for i in range(len(suffixes.keys())):
-                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}\n"], return_tensors="pt").to('cuda')
+                prompt_tok = self.tokenizer([f"{input_prompt} {suffixes[i][0]}"], return_tensors="pt").to('cuda')
 
                 with torch.no_grad():
                     logits = self.model(**prompt_tok).logits
 
-                if 'llama-2' in self.model.config._name_or_path.lower():
+                if "llama-2" in self.model.config._name_or_path.lower():
                     logits = logits[:, 1:, :]
 
                 cur_len = suffixes[i][2]
@@ -157,8 +173,8 @@ class MMLUEval():
                     return 3
                 return -1
 
-            new_answer = max_prob_suffix(prob_a, prob_b, prob_c, prob_d)
-            predictions_new.append(new_answer)
+            answer_new = max_prob_suffix(prob_a, prob_b, prob_c, prob_d)
+            predictions_new.append(answer_new)
 
             if answer == -1:
                 invalid += 1
@@ -169,7 +185,7 @@ class MMLUEval():
                 else:
                     incorrect += 1
 
-            if new_answer == label:
+            if answer_new == label:
                 correct_new += 1
             else:
                 incorrect_new += 1
@@ -179,13 +195,14 @@ class MMLUEval():
                 'input_prompt': input_prompt_text,
                 'true_answer': self._get_label(label),
                 'generated_text': generated_text.replace(input_prompt_text, ''),
+                'answer': answer,
                 'correct': answer == label,
                 'prob_a': prob_a,
                 'prob_b': prob_b,
                 'prob_c': prob_c,
                 'prob_d': prob_d,
-                'answer_new': self._get_label(answer_new),
-                'correct_new': new_answer == label,
+                'highest_probability_answer': self._get_label(answer_new),
+                'correct_new': answer_new == label,
             }
             stored_generations.append(exp_temp_dict)
 

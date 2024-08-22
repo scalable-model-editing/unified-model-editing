@@ -1,5 +1,4 @@
 from pathlib import Path
-
 import yaml
 
 with open("globals.yml", "r") as stream:

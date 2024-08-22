@@ -100,7 +100,6 @@ def compute_rewrite_quality_counterfact(
             ]
         )
     }
-
     if snips is not None:
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
@@ -267,13 +266,18 @@ def test_generation(
         max_out_len=100,
     )
 
-    ngram_entropy = n_gram_entropy(gen_texts)
+    #remove input prompt when calculating entropy
+    entropy_texts = [gen_texts[i][len(prefixes[i]):] for i in range(len(gen_texts))]
+
+    ngram_entropy = n_gram_entropy(entropy_texts)
+    tok_entropy = token_entropy(entropy_texts, tok)
     consistency_tfidf = tfidf_similarity(
         " ".join(gen_texts), " ".join(consistency_texts), vec
     )
 
     ret = {
         "ngram_entropy": ngram_entropy,
+        "adjusted_token_entropy": tok_entropy,
         "reference_score": consistency_tfidf,
         "text": gen_texts,
     }
@@ -281,7 +285,6 @@ def test_generation(
     if len(essence_texts) > 0:
         ppl = perplexity(model, tok, " ".join(essence_texts), max_input_length=100)
         ret.update({"essence_score": ppl, "essence_text": essence_texts})
-
     return ret
 
 
@@ -292,6 +295,12 @@ def n_gram_entropy(gen_texts, agg="arith"):
         [compute_n_gram_entropy(txt) for txt in gen_texts]
     ).item()
 
+def token_entropy(gen_texts, tokenizer, agg="arith"):
+    assert agg in ["arith", "geom"]
+
+    return (scipy.stats.mstats.gmean if agg == "geom" else np.mean)(
+        [compute_token_entropy(txt, tokenizer) for txt in gen_texts]
+    ).item()
 
 def compute_n_gram_entropy(sentence, ns=None, weights=None, agg="arith"):
     if ns is None:
@@ -302,7 +311,7 @@ def compute_n_gram_entropy(sentence, ns=None, weights=None, agg="arith"):
 
     entropy_list = []
     for n in ns:
-        fdist = compute_freq(sentence, n)
+        fdist = compute_freq(sentence, False,  n, None)
         freqs = np.array([freq for _, freq in fdist.items()])
         freqs = freqs / freqs.sum()
 
@@ -313,8 +322,37 @@ def compute_n_gram_entropy(sentence, ns=None, weights=None, agg="arith"):
     return (scipy.stats.mstats.gmean if agg == "geom" else np.mean)(entropy_list)
 
 
-def compute_freq(sentence, n=2):
-    tokens = nltk.word_tokenize(sentence)
+### ADJUSTED NGRAM 
+def compute_token_entropy(sentence, tokenizer, ns=None, weights=None, agg="arith"):
+    if ns is None:
+        ns = [2, 3]
+    if weights is None:
+        weights = [2 / 3, 4 / 3]
+
+    entropy_list = []
+    for n in ns:
+        ## Calculate the number of ngrams (either tokens or words) for normalizing
+        tokens = tokenizer(sentence)['input_ids']
+        ngrams = nltk.ngrams(tokens, n)
+        ngram_count = len(list(ngrams))
+
+        fdist = compute_freq(sentence, True,  n, tokenizer)
+        freqs = np.array([freq for _, freq in fdist.items()])
+        freqs = freqs / freqs.sum()
+        if ngram_count == 1:
+            entropy_list.append(0.0)
+        else:
+            entropy_list.append((np.sum(-freqs * np.log(freqs) / np.log(2)))/(np.log(ngram_count)/np.log(2)))
+
+    entropy_list = np.array(entropy_list) * np.array(weights)
+    return (scipy.stats.mstats.gmean if agg == "geom" else np.mean)(entropy_list)
+
+
+def compute_freq(sentence, token_entropy,  n=2, tokenizer=None):
+    if token_entropy:
+        tokens = tokenizer(sentence)['input_ids']
+    else:
+        tokens = nltk.word_tokenize(sentence)
     ngrams = nltk.ngrams(tokens, n)
     return nltk.FreqDist(ngrams)
 

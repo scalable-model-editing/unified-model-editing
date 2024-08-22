@@ -3,6 +3,11 @@
 *.safetensors
 *.npz
 .gitignore
+glue_metrics.py
+sst2.pkl
+model_downstream.py
+run_evaluation.sh
+summarize_sequential.py
 *.npy
 cross_entropy_loss.py
 *.yaml
