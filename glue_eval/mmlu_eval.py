@@ -71,13 +71,13 @@ class MMLUEval():
     #     return input_prompt, example['question'], example['answer']
 
     def _get_answer(self, text):
-        if 'a\n' in text.lower():
+        if 'a' in text.lower():
             return 0
-        elif 'b\n' in text.lower():
+        elif 'b' in text.lower():
             return 1
-        elif 'c\n' in text.lower():
+        elif 'c' in text.lower():
             return 2
-        elif 'd\n' in text.lower():
+        elif 'd' in text.lower():
             return 3
         return -1
 

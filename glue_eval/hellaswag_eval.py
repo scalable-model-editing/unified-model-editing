@@ -67,13 +67,13 @@ class HELLASWAG_Eval():
     
 
     def _get_answer(self, text):
-        if 'a\n' in text.lower():
+        if 'a' in text.lower():
             return 0
-        elif 'b\n' in text.lower():
+        elif 'b' in text.lower():
             return 1
-        elif 'c\n' in text.lower():
+        elif 'c' in text.lower():
             return 2
-        elif 'd\n' in text.lower():
+        elif 'd' in text.lower():
             return 3
         return -1
 
@@ -111,7 +111,6 @@ class HELLASWAG_Eval():
         start = time.time()
         for s, example in enumerate(self.eval_dataset):
             input_prompt, sentence, label = self._create_prompt(example, gen_len)
-            print(input_prompt)
             input_prompt_ids = self.tokenizer.encode(input_prompt, return_tensors='pt').to('cuda')
             input_prompt_text = self.tokenizer.decode(input_prompt_ids[0], skip_special_tokens=True)
 
@@ -127,8 +126,6 @@ class HELLASWAG_Eval():
 
             predictions.append(answer)
             labels.append(label)
-            print(labels)
-            print(predictions)
 
             #calculate suffix probabilities
             probs = [0 for _ in suffixes.keys()]

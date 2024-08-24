@@ -76,6 +76,8 @@ class MRPCEval():
         correct = 0
         incorrect = 0
         invalid = 0
+        correct_prob = 0
+        incorrect_prob = 0
 
         pos_correct = 0
         neg_correct = 0
