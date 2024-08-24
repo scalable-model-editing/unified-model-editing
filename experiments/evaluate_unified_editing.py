@@ -19,6 +19,7 @@ from dsets import (
     MultiCounterFactDataset,
     get_tfidf_vectorizer,
 )
+from malmen import MalmenRewriteExecutor, MALMENHyperParams
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from memit import MEMITHyperParams, apply_memit_to_model
@@ -35,6 +36,7 @@ ALG_DICT = {
     "ROME": (ROMEHyperParams, apply_rome_to_model),
     "FT": (FTHyperParams, apply_ft_to_model),
     "MEND": (MENDHyperParams, MendRewriteExecutor().apply_to_model),
+    "MALMEN": (MALMENHyperParams, MalmenRewriteExecutor().apply_to_model),
 }
 
 DS_DICT = {
@@ -259,7 +261,7 @@ def main(
             out_file = glue_save_location + "base.json"
             if (num_edits >= 1 and args.do_downstream_eval):
                 glue_eval = GLUEEval(model, tok, number_of_tests, **number_of_few_shots_dict)
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'dialogue', "hellaswag"]]
                 glue_results = glue_eval.evaluate(glue_results, out_file, True, *flags)
 
             #store the individual overall result file
@@ -327,7 +329,7 @@ def main(
             out_file = glue_save_location + "{}_case_{}.json".format(r, record["case_id"])#stores the last case ID of the batch
             if (args.sequential or num_edits >= 1) and args.do_downstream_eval:
                 glue_eval = GLUEEval(edited_model, tok, number_of_tests, **number_of_few_shots_dict)
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'dialogue', "hellaswag"]]
                 glue_results = glue_eval.evaluate(glue_results, out_file, True, *flags)
             
             #store the individual overall result file
@@ -448,7 +450,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--alg_name",
-        choices=["MEMIT", "ROME", "EMMET"],
+        choices=["MEMIT", "ROME", "EMMET", "MEND", "FT", "MALMEN"],
         default="EMMET",
         help="Editing algorithm to use. Results are saved in results/<alg_name>/<run_id>, "
         "where a new run_id is generated on each run. "

@@ -43,7 +43,7 @@ The above script can also be used to run ROME and MEMIT from the same file. We h
 
 ## Downstream Evaluation
 
-**downstream_tasks** specifies the downstream tasks to run. Available tasks: nli,rte,mrpc,sentiment_analysis,dialogue,nli,cola,sst
+**downstream_tasks** specifies the downstream tasks to run. Available tasks: nli,rte,mrpc,sentiment_analysis,dialogue,nli,cola,sst,hellaswag
 
 **number_of_few_shots** is the number of few shots for each downstream task. Specify the number of few shots for each task, separated by commas. number_of_few_shots must be same length as downstream_tasks. Its default value is 0 when the flag is not provided
 

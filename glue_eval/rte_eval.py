@@ -159,7 +159,10 @@ class RTEEval():
                         pos_incorrect += 1
                     elif label == 0:
                         neg_incorrect += 1
-
+            if answer_new == label:
+                correct_prob += 1
+            else:
+                incorrect_prob += 1
             exp_temp_dict = {
                 'sentence1': sentence1,
                 'sentence2': sentence2,
@@ -190,6 +193,8 @@ class RTEEval():
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
+            'correct_prob': correct_prob,
+            'incorrect_prob': incorrect_prob,
             'total': s+1,
             'f1': f1,
             'f1_new': f1_new,
