@@ -234,7 +234,9 @@ def execute_emmet(
         C_inv = torch.inverse(cov)
         D = layer_ks.T @ C_inv @ layer_ks
 
-        D = D + hparams.emmet_lambda * torch.eye(D.shape[0], dtype=D.dtype, device = D.device)#to counter ill-conditioned D
+        if D.shape[0] > 1:
+            D = D + hparams.emmet_lambda * torch.eye(D.shape[0], dtype=D.dtype, device = D.device)#to counter ill-conditioned D
+            
         try:
             D_inv = torch.inverse(D)
         except:
