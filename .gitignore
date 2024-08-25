@@ -11,5 +11,6 @@ summarize_sequential.py
 *.npy
 cross_entropy_loss.py
 *.yaml
+experiments/evaluate_copy.py
 glue_eval/dataset/create_glue_subset.py
 

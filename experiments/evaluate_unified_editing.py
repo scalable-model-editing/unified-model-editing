@@ -9,7 +9,7 @@ import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-sys.path.append('/data/christinefang/unified-model-editing')
+sys.path.append('/home/akshatgupta/KnowledgeEditing_local/unified-model-editing')
 from baselines.ft import FTHyperParams, apply_ft_to_model
 from baselines.mend import MENDHyperParams, MendRewriteExecutor
 from dsets import (
@@ -127,15 +127,9 @@ def main(
     # Instantiate vanilla model
     if type(model_name) is str:
         print("Instantiating model")
-        # model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
-        # original_model = AutoModelForCausalLM.from_pretrained(model_name)
-        # tok = AutoTokenizer.from_pretrained(model_name)
-        # tok.pad_token = tok.eos_token
-        local_models = {"gpt2-xl": '/data/akshat/models/gpt2-xl', "Llama-2-7b": '/data/akshat/models/Llama-2-7b-hf'}
-        model = AutoModelForCausalLM.from_pretrained(local_models[model_name]).cuda()
-        original_model = AutoModelForCausalLM.from_pretrained(local_models[model_name])
-        tok = AutoTokenizer.from_pretrained(local_models[model_name])
-        tok.pad_token = tok.eos_token
+        model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
+        original_model = AutoModelForCausalLM.from_pretrained(model_name)
+        tok = AutoTokenizer.from_pretrained(model_name)
 
         original_weights = extract_model_original_weights(original_model, hparams)
         del original_model
