@@ -5,7 +5,7 @@ import yaml
 
 
 @dataclass
-class GraceHyperParams(HyperParams):
+class GRACEHyperParams(HyperParams):
     # Experiments
     
     edit_lr: int

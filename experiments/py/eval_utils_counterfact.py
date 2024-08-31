@@ -213,8 +213,6 @@ def test_batch_prediction(
         # check if text generated at gen_texts[i//2] contains prompts[i][1] (suffix)
             correct_sufx = prompts[i][1] # is a string
             prefx = prompts[i][0]
-            print(f"suffix: {correct_sufx}")
-            print(f"prefx: {prefx}")
 
             #post edit correctness
             full_text = prompt_gen[i//2] # is a string
