@@ -8,15 +8,15 @@ from glue_eval.mrpc_eval import MRPCEval
 from glue_eval.cola_eval import COLAEval
 from glue_eval.rte_eval import RTEEval
 from glue_eval.mmlu_eval import MMLUEval
-from glue_eval.sentiment_analysis_eval import SENTIMENT_ANALYSIS_Eval
 from glue_eval.dialogue_eval import DIALOGUE_Eval
 from glue_eval.nli_eval import NLIEval
+from glue_eval.hellaswag_eval import HELLASWAG_Eval
 from util.perplexity import perplexity
 from datasets import load_dataset
 
 
 class GLUEEval():
-    def __init__(self, model, tokenizer, number_of_tests = None, sst_number_of_few_shots = 0, mrpc_number_of_few_shots = 0, cola_number_of_few_shots = 0, rte_number_of_few_shots = 0, mmlu_number_of_few_shots = 0, sentiment_analysis_number_of_few_shots = 0, nli_number_of_few_shots = 0, dialogue_number_of_few_shots = 0):
+    def __init__(self, model, tokenizer, number_of_tests = None, sst_number_of_few_shots = 0, mrpc_number_of_few_shots = 0, cola_number_of_few_shots = 0, rte_number_of_few_shots = 0, mmlu_number_of_few_shots = 0, nli_number_of_few_shots = 0, dialogue_number_of_few_shots = 0, hellaswag_number_of_few_shots = 0):
         self.model = model
 
         self.tokenizer = tokenizer
@@ -31,11 +31,11 @@ class GLUEEval():
 
         self.mmlu_eval = MMLUEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = mmlu_number_of_few_shots)
 
-        self.sentiment_analysis_eval = SENTIMENT_ANALYSIS_Eval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = sentiment_analysis_number_of_few_shots)
-
         self.nli_eval = NLIEval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = nli_number_of_few_shots)
 
         self.dialogue_eval = DIALOGUE_Eval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = dialogue_number_of_few_shots)
+
+        self.hellaswag_eval = HELLASWAG_Eval(model, tokenizer, number_of_tests = number_of_tests, number_of_few_shots = hellaswag_number_of_few_shots)
 
 
     def _save_generations(self, record_path, generations, task):
@@ -46,7 +46,7 @@ class GLUEEval():
 
 
 
-    def evaluate(self, glue_results, record_path, perplexity_flag = False, sst_flag = False, mmlu_flag = False, mrpc_flag = False, cola_flag = False, rte_flag = False, nli_flag = False, sentiment_analysis_flag = False, dialogue_flag = False, gen_len = 3):
+    def evaluate(self, glue_results, record_path, perplexity_flag = False, sst_flag = False, mmlu_flag = False, mrpc_flag = False, cola_flag = False, rte_flag = False, nli_flag = False, dialogue_flag = False, hellaswag_flag = False, gen_len = 3):
         if perplexity_flag:
             raw_ds = load_dataset(
                         "wikitext",
@@ -79,11 +79,6 @@ class GLUEEval():
             glue_results['rte'] = result_dict
             self._save_generations(record_path, generations, 'rte')
 
-        if sentiment_analysis_flag:
-            result_dict, generations = self.sentiment_analysis_eval.evaluate(gen_len)
-            glue_results['sentiment_analysis'] = result_dict
-            self._save_generations(record_path, generations, 'sentiment_analysis')
-
         if nli_flag:
             result_dict, generations = self.nli_eval.evaluate(gen_len)
             glue_results['nli'] = result_dict
@@ -93,6 +88,11 @@ class GLUEEval():
             result_dict, generations = self.dialogue_eval.evaluate(gen_len)
             glue_results['dialogue'] = result_dict
             self._save_generations(record_path, generations, 'dialogue')
+
+        if hellaswag_flag:
+            result_dict, generations = self.hellaswag_eval.evaluate(gen_len)
+            glue_results['hellaswag'] = result_dict
+            self._save_generations(record_path, generations, 'hellawag')
             
         return glue_results
 

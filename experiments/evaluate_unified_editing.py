@@ -9,7 +9,8 @@ import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-sys.path.append('/home/akshatgupta/KnowledgeEditing_local/unified-model-editing')
+#sys.path.append('/home/akshatgupta/KnowledgeEditing_local/unified-model-editing')
+sys.path.append('/data/christinefang/unified-model-editing')
 from baselines.ft import FTHyperParams, apply_ft_to_model
 from baselines.mend import MENDHyperParams, MendRewriteExecutor
 from dsets import (
@@ -19,11 +20,14 @@ from dsets import (
     MultiCounterFactDataset,
     get_tfidf_vectorizer,
 )
+from malmen import MalmenRewriteExecutor, MALMENHyperParams
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from memit import MEMITHyperParams, apply_memit_to_model
 from rome import ROMEHyperParams, apply_rome_to_model
 from emmet import EMMETHyperParams, apply_emmet_to_model
+from pmet import PMETHyperParams, apply_pmet_to_model
+
 from util import nethook
 from util.globals import *
 
@@ -33,8 +37,10 @@ ALG_DICT = {
     "EMMET": (EMMETHyperParams, apply_emmet_to_model),
     "MEMIT": (MEMITHyperParams, apply_memit_to_model),
     "ROME": (ROMEHyperParams, apply_rome_to_model),
+    "PMET": (PMETHyperParams, apply_pmet_to_model),
     "FT": (FTHyperParams, apply_ft_to_model),
     "MEND": (MENDHyperParams, MendRewriteExecutor().apply_to_model),
+    "MALMEN": (MALMENHyperParams, MalmenRewriteExecutor().apply_to_model),
 }
 
 DS_DICT = {
@@ -103,7 +109,7 @@ def main(
     try:
         hparams = params_class.from_json(params_path)
     except:
-        params_path = HPARAMS_DIR / alg_name / hparams_fname
+        params_path = f"{HPARAMS_DIR}/{alg_name}/{hparams_fname}"
         hparams = params_class.from_json(params_path)
 
     if not (run_dir / "params.json").exists():
@@ -125,10 +131,17 @@ def main(
     # Instantiate vanilla model
     if type(model_name) is str:
         print("Instantiating model")
-        model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
-        original_model = AutoModelForCausalLM.from_pretrained(model_name)
-        tok = AutoTokenizer.from_pretrained(model_name)
+        # model = AutoModelForCausalLM.from_pretrained(model_name).cuda()
+        # original_model = AutoModelForCausalLM.from_pretrained(model_name)
+        # tok = AutoTokenizer.from_pretrained(model_name)
+
+        local_models = {"Llama-2-7b": "/data/akshat/models/Llama-2-7b-hf", "EleutherAI/gpt-j-6B": "/data/akshat/models/gpt-j-6b"}
+
+        model = AutoModelForCausalLM.from_pretrained(local_models[model_name]).cuda()
+        original_model = AutoModelForCausalLM.from_pretrained(local_models[model_name])
+        tok = AutoTokenizer.from_pretrained(local_models[model_name])
         tok.pad_token = tok.eos_token
+
 
         original_weights = extract_model_original_weights(original_model, hparams)
         del original_model
@@ -258,7 +271,7 @@ def main(
             out_file = glue_save_location + "base.json"
             if (num_edits >= 1 and args.do_downstream_eval):
                 glue_eval = GLUEEval(model, tok, number_of_tests, **number_of_few_shots_dict)
-                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
+                flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'dialogue', 'hellaswag']]
                 glue_results = glue_eval.evaluate(glue_results, out_file, False, *flags)
 
             #store the individual overall result file
@@ -325,7 +338,7 @@ def main(
         out_file = glue_save_location + "{}_case_{}.json".format(r, record["case_id"])#stores the last case ID of the batch
         if (args.sequential or num_edits >= 1) and args.do_downstream_eval and (r + 1) % args.downstream_eval_steps == 0:
             glue_eval = GLUEEval(edited_model, tok, number_of_tests, **number_of_few_shots_dict)
-            flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'sentiment_analysis', 'dialogue']]
+            flags = [_ in downstream_tasks for _ in ['sst', 'mmlu', 'mrpc', 'cola', 'rte', 'nli', 'dialogue', 'hellaswag']]
             glue_results = glue_eval.evaluate(glue_results, out_file, False, *flags)
         
         #store the individual overall result file
@@ -446,7 +459,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--alg_name",
-        choices=["MEMIT", "ROME", "EMMET", "FT"],
+        choices=["MEMIT", "ROME", "EMMET", "FT", "PMET"],
         default="EMMET",
         help="Editing algorithm to use. Results are saved in results/<alg_name>/<run_id>, "
         "where a new run_id is generated on each run. "
