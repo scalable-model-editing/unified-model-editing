@@ -7,7 +7,7 @@ import sys
 import numpy as np
 from scipy.stats import hmean
 
-sys.path.append('/home/akshatgupta/KnowledgeEditing_local/llama-study/unified-model-editing-internal')
+sys.path.append('/home/akshatgupta/KnowledgeEditing_local/unified-model-editing')
 from util.globals import *
 
 
@@ -63,7 +63,7 @@ def summarize(
                     cur_sum[sum_key_discrete].append(
                         np.mean(
                             [
-                                x["target_true"] > x["target_new"]
+                                x["post_target_true_prob"] > x["post_target_new_prob"]
                                 for x in data[prefix][key]
                             ]
                         )
@@ -71,7 +71,7 @@ def summarize(
                     cur_sum[sum_key_cont].append(
                         np.mean(
                             [
-                                np.exp(-x["target_new"]) - np.exp(-x["target_true"])
+                                np.exp(-x["post_target_new_prob"]) - np.exp(-x["post_target_true_prob"])
                                 for x in data[prefix][key]
                             ]
                         )
@@ -85,7 +85,7 @@ def summarize(
                     cur_sum[sum_key_discrete].append(
                         np.mean(
                             [
-                                x["target_true"] < x["target_new"]
+                                x["post_target_true_prob"] < x["post_target_new_prob"]
                                 for x in data[prefix][key]
                             ]
                         )
@@ -93,7 +93,7 @@ def summarize(
                     cur_sum[sum_key_cont].append(
                         np.mean(
                             [
-                                np.exp(-x["target_true"]) - np.exp(-x["target_new"])
+                                np.exp(-x["post_target_true_prob"]) - np.exp(-x["post_target_new_prob"])
                                 for x in data[prefix][key]
                             ]
                         )
