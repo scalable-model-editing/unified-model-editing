@@ -1,17 +1,17 @@
 {
     "layers": [
-        5
+        4, 5, 6, 7, 8
     ],
-    "clamp_norm_factor": 4,
+    "clamp_norm_factor": 0.75,
     "layer_selection": "all",
     "fact_token": "subject_last",
     "v_num_grad_steps": 25,
     "v_lr": 5e-1,
     "v_loss_layer": 31,
-    "v_weight_decay": 1e-3,
+    "v_weight_decay": 0.5,
     "kl_factor": 0.0625,
     "mom2_adjustment": true,
-    "mom2_update_weight": 1,
+    "mom2_update_weight": 15000,
     "rewrite_module_tmp": "model.layers.{}.mlp.down_proj",
     "layer_module_tmp": "model.layers.{}",
     "mlp_module_tmp": "model.layers.{}.mlp",
@@ -23,5 +23,7 @@
     "mom2_dtype": "float32",
     "calculate_objective_value": false,
     "update_norm_lambda": 0,
-    "emmet_lambda": 0.1
+    "emmet_lambda": 0.1,
+    "prob_cutoff":0, 
+    "norm_control":0
 }

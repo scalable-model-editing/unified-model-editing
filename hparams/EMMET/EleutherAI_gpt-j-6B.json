@@ -11,7 +11,7 @@
     "v_weight_decay": 0.5,
     "kl_factor": 0.0625,
     "mom2_adjustment": true,
-    "mom2_update_weight": 1,
+    "mom2_update_weight": 10000,
     "rewrite_module_tmp": "transformer.h.{}.mlp.fc_out",
     "layer_module_tmp": "transformer.h.{}",
     "mlp_module_tmp": "transformer.h.{}.mlp",
@@ -23,5 +23,7 @@
     "mom2_dtype": "float32",
     "calculate_objective_value": false,
     "update_norm_lambda": 0,
-    "emmet_lambda": 0.1
+    "emmet_lambda": 0.1,
+    "prob_cutoff":0,
+    "norm_control":0
 }
