@@ -71,13 +71,13 @@ class MMLUEval():
     #     return input_prompt, example['question'], example['answer']
 
     def _get_answer(self, text):
-        if 'a\n' in text.lower():
+        if 'a' in text.lower():
             return 0
-        elif 'b\n' in text.lower():
+        elif 'b' in text.lower():
             return 1
-        elif 'c\n' in text.lower():
+        elif 'c' in text.lower():
             return 2
-        elif 'd\n' in text.lower():
+        elif 'd' in text.lower():
             return 3
         return -1
 
@@ -98,9 +98,8 @@ class MMLUEval():
         correct = 0
         incorrect = 0
         invalid = 0
-
-        correct_new = 0
-        incorrect_new = 0
+        correct_prob = 0
+        incorrect_prob = 0
 
         pos_correct = 0
         neg_correct = 0
@@ -186,9 +185,9 @@ class MMLUEval():
                     incorrect += 1
 
             if answer_new == label:
-                correct_new += 1
+                correct_prob += 1
             else:
-                incorrect_new += 1
+                incorrect_prob += 1
 
             exp_temp_dict = {
                 'sentence': sentence,
@@ -221,8 +220,8 @@ class MMLUEval():
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
-            'correct_new': correct_new,
-            'incorrect_new': incorrect_new,
+            'correct_prob': correct_prob,
+            'incorrect_prob': incorrect_prob,
             'total': s+1,
             'f1': f1,
             'f1_new': f1_new,

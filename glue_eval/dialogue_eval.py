@@ -81,6 +81,8 @@ class DIALOGUE_Eval():
         correct = 0
         incorrect = 0
         invalid = 0
+        correct_prob = 0
+        incorrect_prob = 0
 
         pos_correct = 0
         neg_correct = 0
@@ -155,8 +157,8 @@ class DIALOGUE_Eval():
                     return 'D', 3
                 return '-1', -1
             
-            new_answer = max_prob_suffix(prob_a, prob_b, prob_c, prob_d)
-            predictions_new.append(new_answer[1])
+            answer_new = max_prob_suffix(prob_a, prob_b, prob_c, prob_d)
+            predictions_new.append(answer_new[1])
 
             print(f"prediction: {answer}, true: {label}")
             if answer == -1:
@@ -179,6 +181,11 @@ class DIALOGUE_Eval():
                     elif label == 0:
                         neg_incorrect += 1
 
+            if answer_new[1] == label:
+                correct_prob += 1
+            else:
+                incorrect_prob += 1
+
             exp_temp_dict = {
                 'article': article,
                 'options': options,  
@@ -191,8 +198,8 @@ class DIALOGUE_Eval():
                 'prob_b': prob_b,
                 'prob_c': prob_c,
                 'prob_d': prob_d,
-                'highest_probability_answer': new_answer[0],
-                'correct_new': new_answer[1] == label,
+                'highest_probability_answer': answer_new[0],
+                'correct_new': answer_new[1] == label
             }
             stored_generations.append(exp_temp_dict)
 
@@ -212,6 +219,8 @@ class DIALOGUE_Eval():
             'correct': correct,
             'incorrect': incorrect,
             'invalid': invalid,
+            'correct_prob': correct_prob,
+            'incorrect_prob': incorrect_prob,
             'total': s+1,
             'f1': f1,
             'f1_new': f1_new,
