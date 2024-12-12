@@ -87,7 +87,6 @@ def apply_emmet_to_model(
             #cache spectral norm of original weights
             if w_name not in SVD_CACHE:
                 print('adding SVD')
-                print(w[...].shape)
                 U, S, Vh = svd_descending(w[...])
                 spectral_norm = torch.max(S)
                 SVD_CACHE[w_name] = spectral_norm.item()
@@ -99,13 +98,13 @@ def apply_emmet_to_model(
             w[...] += upd_matrix.float()
 
             #check angle with original left singular vectors
-            U, S, Vh = svd_descending(w[...])
-            left_angles = torch.diag(U.T @ SVD_VECTORS[w_name][0].cuda()).detach().cpu().tolist()
+            #U, S, Vh = svd_descending(w[...])
+            #left_angles = torch.diag(U.T @ SVD_VECTORS[w_name][0].cuda()).detach().cpu().tolist()
 
             #cap singular value to 11
-            sv_cap = SVD_CACHE[w_name]
-            U, S, Vh = torch.linalg.svd(w[...], full_matrices=False) 
-            S_clipped = torch.clamp(S, max=sv_cap)
+            #sv_cap = SVD_CACHE[w_name]
+            #U, S, Vh = torch.linalg.svd(w[...], full_matrices=False) 
+            #S_clipped = torch.clamp(S, max=sv_cap)
             #if hparams.cap_sv:
             #    w[...] =  U @ torch.diag(S_clipped) @ Vh
 
@@ -116,9 +115,9 @@ def apply_emmet_to_model(
             #    w[...] *= alpha
 
             #spectral normalization
-            gamma = SVD_CACHE[w_name]
-            _, S, _ = torch.linalg.svd(w[...], full_matrices=False)
-            spectral_norm = torch.max(S)
+            #gamma = SVD_CACHE[w_name]
+            #_, S, _ = torch.linalg.svd(w[...], full_matrices=False)
+            #spectral_norm = torch.max(S)
             #if hparams.spectral_normalization:
             #    w[...] = gamma * (w[...] / spectral_norm)
 
@@ -143,8 +142,7 @@ def apply_emmet_to_model(
                 'inside_norms': inside_norms, 
                 'alpha': alpha,
                 'svd_final': svd_final,
-                'svd_upd': svd_upd, 
-                'left_angles': left_angles
+                'svd_upd': svd_upd
             }
             distances[layer] = temp_dict
 

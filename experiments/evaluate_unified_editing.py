@@ -339,6 +339,42 @@ def main(
 
 
         if not sequential:
+            #Evaluating after every back only if not sequential
+            start = time()
+            for record in record_chunks:
+                #evaluate evaluate_ratio percentage of files in a batch
+                if args.evaluate_ratio < random.random():
+                    continue
+                out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
+
+                with open(out_file, 'r+') as f:
+                    data = json.load(f)
+                    data['time'] = exec_time,
+
+                    post_list = ds_eval_method(
+                        edited_model,
+                        tok,
+                        record,
+                        *(
+                            gen_test_vars
+                            if record["case_id"] % generation_test_interval == 0
+                            else [None, None]
+                        ),
+                    )
+                    for key, value in post_list.items():
+                        if key in ["paraphrase_prompts_probs", "neighborhood_prompts_probs", "rewrite_prompts_probs", "attribute_prompts_probs"]:
+                            for i in range(len(data['post'][key])):
+                                data['post'][key][i]['post_sliding_text'] = post_list[key][i]['sliding_text']
+                                data['post'][key][i]['post_sliding_correct'] = post_list[key][i]['sliding_correct']
+                                data['post'][key][i]['post_target_new_prob'] = post_list[key][i]['target_new_prob']
+                                data['post'][key][i]['post_target_true_prob'] = post_list[key][i]['target_true_prob']
+                        if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy", "essence_score"]:
+                            data['post']['post_' + key] = post_list[key]
+
+                    f.seek(0)        # <--- should reset file position to the beginning.
+                    json.dump(data, f, indent=4)
+                    f.truncate()
+
             # Restore original weights
             with torch.no_grad():
                 for k, v in weights_copy.items():
@@ -354,52 +390,57 @@ def main(
             model.save_pretrained(model_save_folder)
 
 
-    # Iterate through dataset
-    for r, e in enumerate(range(0, max_examples, num_edits)):
-        record_chunks = []
-        for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
-            datapoint = dataset.__getitem__(element_index)
-            record_chunks.append(datapoint)
+    if sequential:
+        #Final evaluation after all edits. Only done for sequential case
+        #Iterate through dataset
+        for r, e in enumerate(range(0, max_examples, num_edits)):
+            record_chunks = []
+            for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
+                datapoint = dataset.__getitem__(element_index)
+                record_chunks.append(datapoint)
 
-        case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
+            case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
+            case_result_template_final = str(run_dir / "final_{}_{}_edits-case_{}.json")
 
-        # Evaluate new model
-        start = time()
-        for record in record_chunks:
-            #evaluate evaluate_ratio percentage of files in a batch
-            if args.evaluate_ratio < random.random():
-                continue
+            # Evaluate new model
+            start = time()
+            for record in record_chunks:
+                #evaluate evaluate_ratio percentage of files in a batch
+                if args.evaluate_ratio < random.random():
+                    continue
 
-            out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
+                out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
+                out_file_final = Path(case_result_template_final.format(num_edits, r, record["case_id"]))
+                shutil.copyfile(out_file, out_file_final)
 
-            with open(out_file, 'r+') as f:
-                data = json.load(f)
-                data['time'] = exec_time,
+                with open(out_file_final, 'r+') as f:
+                    data = json.load(f)
+                    data['time'] = exec_time,
 
-                post_list = ds_eval_method(
-                    edited_model,
-                    tok,
-                    record,
-                    *(
-                        gen_test_vars
-                        if record["case_id"] % generation_test_interval == 0
-                        else [None, None]
-                    ),
-                )
-                for key, value in post_list.items():
-                    if key in ["paraphrase_prompts_probs", "neighborhood_prompts_probs", "rewrite_prompts_probs", "attribute_prompts_probs"]:
-                        for i in range(len(data['post'][key])):
-                            data['post'][key][i]['post_sliding_text'] = post_list[key][i]['sliding_text']
-                            data['post'][key][i]['post_sliding_correct'] = post_list[key][i]['sliding_correct']
-                            data['post'][key][i]['post_target_new_prob'] = post_list[key][i]['target_new_prob']
-                            data['post'][key][i]['post_target_true_prob'] = post_list[key][i]['target_true_prob']
-                    if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy", "essence_score"]:
-                        data['post']['post_' + key] = post_list[key]
+                    post_list = ds_eval_method(
+                        edited_model,
+                        tok,
+                        record,
+                        *(
+                            gen_test_vars
+                            if record["case_id"] % generation_test_interval == 0
+                            else [None, None]
+                        ),
+                    )
+                    for key, value in post_list.items():
+                        if key in ["paraphrase_prompts_probs", "neighborhood_prompts_probs", "rewrite_prompts_probs", "attribute_prompts_probs"]:
+                            for i in range(len(data['post'][key])):
+                                data['post'][key][i]['post_sliding_text'] = post_list[key][i]['sliding_text']
+                                data['post'][key][i]['post_sliding_correct'] = post_list[key][i]['sliding_correct']
+                                data['post'][key][i]['post_target_new_prob'] = post_list[key][i]['target_new_prob']
+                                data['post'][key][i]['post_target_true_prob'] = post_list[key][i]['target_true_prob']
+                        if key in ["rewrite_prompts_correct", "paraphrase_prompts_correct", "neighborhood_prompts_correct", "attribute_prompts_correct" "text", "ngram_entropy", "essence_score"]:
+                            data['post']['post_' + key] = post_list[key]
 
-                f.seek(0)        # <--- should reset file position to the beginning.
-                json.dump(data, f, indent=4)
-                f.truncate()
-      
+                    f.seek(0)        # <--- should reset file position to the beginning.
+                    json.dump(data, f, indent=4)
+                    f.truncate()
+        
 
 def extract_model_original_weights(model, hparams):
     weights = {
@@ -500,7 +541,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_size_limit",
         type=int,
-        default=3000,
+        default=12,
         help="Truncate CounterFact to first n records.",
     )
     parser.add_argument(
@@ -526,7 +567,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_edits",
         type=int,
-        default=1,
+        default=100,
         help="Number of rewrites to perform simultaneously.",
     )
     parser.add_argument(
@@ -550,7 +591,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--do_downstream_eval",
         type=bool,
-        default=False,
+        default=True,
         help="If we want to do sequential editing or not",
     )
     parser.add_argument(

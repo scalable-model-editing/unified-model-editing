@@ -209,7 +209,7 @@ if __name__ == "__main__":
         "--check_final",
         type=int,
         default=0,
-        help="Can be 0 or 1"
+        help="Can be 0, 1, -1"
         "Useful for comparing different in-progress runs on the same slice of data.",
     )
     parser.add_argument(
@@ -221,13 +221,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    summarize(
-        args.dir_name,
-        None if args.runs is None else args.runs.split(","),
-        args.first_n_cases,
-        args.path, 
-        check_final = False
-    )
+    if args.check_final == 0:
+        summarize(
+            args.dir_name,
+            None if args.runs is None else args.runs.split(","),
+            args.first_n_cases,
+            args.path, 
+            check_final = False
+        )
 
     if args.check_final == 1:
         summarize(
@@ -237,3 +238,20 @@ if __name__ == "__main__":
         args.path, 
         check_final = True
     )
+        
+    if args.check_final == -1:
+        summarize(
+            args.dir_name,
+            None if args.runs is None else args.runs.split(","),
+            args.first_n_cases,
+            args.path, 
+            check_final = False
+        )
+
+        summarize(
+        args.dir_name,
+        None if args.runs is None else args.runs.split(","),
+        args.first_n_cases,
+        args.path, 
+        check_final = True
+        )
