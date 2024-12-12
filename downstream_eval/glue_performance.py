@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
 
     metric_names = ['correct', 'f1', 'mcc', 'invalid']
-    task_names = ['sst', 'nli', 'mmmlu']
+    task_names = ['sst', 'nli', 'mmmlu', 'cola', 'rte', 'mrpc']
     
     glue_eval = {'distance':{}}
     for task in task_names:
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 
     algo = 'EMMET'
-    run = 'run_002'
+    run = 'run_022'
     save_location = 'downstream_eval/plots/' + algo + '_' + run + '/'
     os.makedirs(save_location, exist_ok=True)
     data_location = 'results/' + algo + '/' + run + '/glue_eval/'
@@ -56,7 +56,7 @@ if __name__ == '__main__':
                     for metric in metric_names:
                         glue_eval[task][metric][int(edit_num)] = data[task][metric]
 
-    task_dict = {'sst':'SST2', 'mmmlu':'MMLU', 'nli':'NLI'}
+    task_dict = {'sst':'SST2', 'mmmlu':'MMLU', 'nli':'NLI', 'cola':'COLA', 'rte':'RTE', 'mrpc':'MRPC'}
     run_title = {}
     #task_colors = {'sst':'r', 'mrpc':'b', 'cola':'g', 'rte':'k'}
     #plot metrics individual with number of edits
@@ -68,10 +68,10 @@ if __name__ == '__main__':
             x, y = [], []
             for edit_num, correct in sorted_dict:
                 x.append(edit_num)
-                if metric in ['f1', 'accuracy']:
+                if metric in ['f1', 'mcc']:
                     y.append(correct * 100)
                 else:
-                    y.append(correct / 200)
+                    y.append(correct)
 
             plt.plot(x,y, label = task_dict[task], linewidth =3)
 

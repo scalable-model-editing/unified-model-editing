@@ -38,3 +38,7 @@ class MEMITHyperParams(HyperParams):
     calculate_objective_value: bool
     update_norm_lambda: float
     emmet_lambda: float
+
+    #new hparams
+    prob_cutoff: float
+    norm_control: float

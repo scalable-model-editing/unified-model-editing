@@ -17,6 +17,7 @@ def summarize(
     first_n_cases=None,
     abs_path=False,
     get_uncompressed=False,
+    check_final=False,
 ):  # runs = None -> all runs
     summaries = []
     uncompressed = []
@@ -34,6 +35,11 @@ def summarize(
         files.sort(key=lambda x: int(str(x).split("_")[-1].split(".")[0]))
         file_wise_results = {}
         for case_file in files:
+            if check_final and 'final' not in str(case_file):
+                continue
+            if not check_final and 'final' in str(case_file):
+                continue
+
             try:
                 with open(case_file, "r") as f:
                     data = json.load(f)
@@ -44,7 +50,11 @@ def summarize(
             #if first_n_cases is not None and case_id >= first_n_cases:
             #    break
 
-            num_edits = int(str(case_file).split('/')[-1].split('_')[1])
+            if 'final' not in str(case_file):
+                num_edits = int(str(case_file).split('/')[-1].split('_')[1])
+            else:
+                num_edits = int(str(case_file).split('/')[-1].split('_')[2])
+
             if first_n_cases is not None and num_edits >= first_n_cases:
                 continue
 
@@ -164,6 +174,12 @@ def summarize(
         pprint(cur_sum)
         summaries.append(cur_sum)
 
+        print_string = ''
+        for key in ['post_score', 'post_rewrite_success', 'post_paraphrase_success', 'post_neighborhood_success', 'post_ngram_entropy']:
+            print_string += str(round(cur_sum[key][0], 3)) + '/'
+        print_string = print_string[:-1]
+        print(print_string)
+
     #return uncompressed if get_uncompressed else summaries
     return cur_sum
 
@@ -190,6 +206,13 @@ if __name__ == "__main__":
         "Useful for comparing different in-progress runs on the same slice of data.",
     )
     parser.add_argument(
+        "--check_final",
+        type=int,
+        default=0,
+        help="Can be 0 or 1"
+        "Useful for comparing different in-progress runs on the same slice of data.",
+    )
+    parser.add_argument(
         "--path",
         type=str,
         default=None,
@@ -202,5 +225,15 @@ if __name__ == "__main__":
         args.dir_name,
         None if args.runs is None else args.runs.split(","),
         args.first_n_cases,
-        args.path
+        args.path, 
+        check_final = False
+    )
+
+    if args.check_final == 1:
+        summarize(
+        args.dir_name,
+        None if args.runs is None else args.runs.split(","),
+        args.first_n_cases,
+        args.path, 
+        check_final = True
     )

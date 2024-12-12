@@ -113,6 +113,7 @@ def compute_z(
     nethook.set_requires_grad(False, model)
 
     # Execute optimization
+    correct_counter = 0
     for it in range(hparams.v_num_grad_steps):
         opt.zero_grad()
 
@@ -146,6 +147,7 @@ def compute_z(
             : len(rewriting_prompts)
         ]
         log_probs = torch.log_softmax(ln_f(full_repr) @ lm_w + lm_b, dim=2)
+
         loss = torch.gather(
             log_probs,
             2,
@@ -162,13 +164,45 @@ def compute_z(
         weight_decay = hparams.v_weight_decay * (
             torch.norm(delta) / torch.norm(target_init) ** 2
         )
-        # weight_decay = hparams.v_weight_decay * torch.norm(delta) ** 2
-        loss = nll_loss + kl_loss + weight_decay
+
+        norm_control = hparams.norm_control * torch.abs(torch.norm(target_init + delta) - torch.norm(target_init))
+
+        loss = nll_loss + kl_loss + weight_decay + norm_control 
+
+        ##### CODE to cut off calculation as soon as the target reaches top prediction
+        prompt_prob = log_probs[1:,:, :]    #get only probalities of prompts, removing KL divergence prompt
+        prompt_targets = rewriting_targets[1:,:]    #get the targets for the same prompts
+
+        prompt_mask = prompt_targets != -100    #this identifies the index of the target prompt
+
+        prompt_index, target_index = torch.nonzero(prompt_mask, as_tuple=True)
+        #prompt index just generates indexes 0,1,2,3,4 to index each prompt in prompt_prob
+        #target index generates the vocabulary index in the sentence where are target word lies
+
+        target_token_index = prompt_targets[prompt_index, target_index]    #retrieve the target token vocab index 
+        current_top_rank_index = torch.argmax(prompt_prob[prompt_index, target_index], dim = -1)    #generates vocab index of number 1 ranking token
+        total_check_tokens = target_token_index.shape[0]
+
+        num_correct = torch.sum(target_token_index == current_top_rank_index).item()   #number of prompts for which we get correct target
+
         print(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
-            f"{torch.exp(-nll_loss_each).mean().item()}"
+            f"{round(torch.exp(-nll_loss_each).mean().item(), 4)} "
+            f"Num Correct {num_correct} "
+            f"Total Check Tokens {total_check_tokens} | "
+            f"Init norm {round(target_init.norm().item(), 2)} | Delta norm {round(delta.norm().item(), 2)} | Target norm {round((target_init + delta).norm().item(), 2)}"
         )
+
+        if hparams.prob_cutoff < 0 and num_correct == total_check_tokens:    # if hparams.prob_cutoff is negative, it acts as a counter to number of steps - 1 to do after target reaches rank = 1
+            correct_counter += 1
+            if correct_counter == abs(hparams.prob_cutoff):
+                break
+
+        ##Code to cut off when mean prob reaches a threshold
+        if hparams.prob_cutoff > 0 and torch.exp(-nll_loss_each).mean().item() > hparams.prob_cutoff:
+                break
+
         if loss < 5e-2:
             break
 
@@ -189,8 +223,7 @@ def compute_z(
     print(
         f"Init norm {target_init.norm()} | Delta norm {delta.norm()} | Target norm {target.norm()}"
     )
-
-    return target
+    return target, delta.norm().item(), target_init.norm().item()
 
 
 def get_module_input_output_at_words(

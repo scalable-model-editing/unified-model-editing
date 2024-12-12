@@ -21,6 +21,30 @@ from .emmet_hparams import EMMETHyperParams
 # Cache variable(s)
 CONTEXT_TEMPLATES_CACHE = None
 COV_CACHE = {}
+SVD_CACHE = {}
+SVD_VECTORS = {}
+
+def svd_descending(matrix):
+    """Computes the SVD of a matrix and arranges singular values and vectors in descending order."""
+
+    dim1, dim2 = matrix.shape
+    if dim1 < dim2:
+        U, S, Vh = torch.linalg.svd(matrix)
+    else:
+        U, S, Vh = torch.linalg.svd(matrix.T)
+
+    # Sort singular values in descending order
+    S, indices = torch.sort(S, descending=True)
+
+    # Rearrange singular vectors accordingly
+    U = U[:, indices]
+    Vh = Vh[indices, :]
+
+    column_norms = torch.norm(U, dim = 0)
+    U = U / column_norms
+
+    return U, S, Vh
+
 
 
 def apply_emmet_to_model(
@@ -38,13 +62,15 @@ def apply_emmet_to_model(
         Note that you are responsible for deallocating the new model's memory to avoid leaks.
     :return: (1) the updated model, (2) an original copy of the weights that changed
     """
+    global SVD_CACHE
 
-    distances = {}
     weights_copy = {}
     if copy:
         model = deepcopy(model)
 
-    deltas = execute_emmet( model, tok, requests, hparams, cache_template=cache_template)
+    deltas, z_norms = execute_emmet( model, tok, requests, hparams, cache_template=cache_template)
+    distances = {}
+    distances['z_norms'] = z_norms
 
     with torch.no_grad():
         for w_name, (key_mat, val_mat, preservation_distance, new_edit_distance, old_edit_distance, inside_norms) in deltas.items():
@@ -58,7 +84,52 @@ def apply_emmet_to_model(
 
             original_weights_norm = torch.norm(w[...]).detach().cpu().item()
 
+            #cache spectral norm of original weights
+            if w_name not in SVD_CACHE:
+                print('adding SVD')
+                print(w[...].shape)
+                U, S, Vh = svd_descending(w[...])
+                spectral_norm = torch.max(S)
+                SVD_CACHE[w_name] = spectral_norm.item()
+
+                #store svd vectors
+                SVD_VECTORS[w_name] = (U.detach().cpu().clone(), Vh.detach().cpu().clone())
+
+
             w[...] += upd_matrix.float()
+
+            #check angle with original left singular vectors
+            U, S, Vh = svd_descending(w[...])
+            left_angles = torch.diag(U.T @ SVD_VECTORS[w_name][0].cuda()).detach().cpu().tolist()
+
+            #cap singular value to 11
+            sv_cap = SVD_CACHE[w_name]
+            U, S, Vh = torch.linalg.svd(w[...], full_matrices=False) 
+            S_clipped = torch.clamp(S, max=sv_cap)
+            #if hparams.cap_sv:
+            #    w[...] =  U @ torch.diag(S_clipped) @ Vh
+
+            #rescale norm
+            new_weights_norm = torch.norm(w[...]).detach().cpu().item()
+            alpha = original_weights_norm/new_weights_norm
+            #if hparams.norm_rescaling:
+            #    w[...] *= alpha
+
+            #spectral normalization
+            gamma = SVD_CACHE[w_name]
+            _, S, _ = torch.linalg.svd(w[...], full_matrices=False)
+            spectral_norm = torch.max(S)
+            #if hparams.spectral_normalization:
+            #    w[...] = gamma * (w[...] / spectral_norm)
+
+            start = time.time()
+            _, svd_upd, _ = torch.linalg.svd(upd_matrix)
+            svd_upd = sorted(svd_upd.detach().cpu().tolist(), reverse=True)
+            
+            _, svd_final, _ = torch.linalg.svd(w[...])
+            svd_final = sorted(svd_final.detach().cpu().tolist(), reverse=True)
+            print('svd calculation time:', time.time() - start)
+
 
             #saving all distances
             layer = w_name.split('.')[2]
@@ -69,7 +140,11 @@ def apply_emmet_to_model(
                 'delta_norm': torch.norm(upd_matrix).detach().cpu().item(),
                 'new_weights_norm': torch.norm(w[...]).detach().cpu().item(),
                 'original_weights_norm': original_weights_norm,
-                'inside_norms': inside_norms
+                'inside_norms': inside_norms, 
+                'alpha': alpha,
+                'svd_final': svd_final,
+                'svd_upd': svd_upd, 
+                'left_angles': left_angles
             }
             distances[layer] = temp_dict
 
@@ -93,6 +168,7 @@ def execute_emmet(
     """
 
     deltas = {}
+    z_norms = {}
 
     # Update target and print info
     requests = deepcopy(requests)
@@ -148,7 +224,7 @@ def execute_emmet(
 
         # Compute k/v pair if not loaded from cache
         if not data_loaded:
-            cur_z = compute_z(
+            cur_z, delta_norm, init_norm = compute_z(
                 model,
                 tok,
                 request,
@@ -156,7 +232,7 @@ def execute_emmet(
                 z_layer,
                 context_templates,
             )
-
+            z_norms[r_id] = {'delta': delta_norm, 'init_norm': init_norm, 'final_norm': cur_z.norm().item()}
             z_list.append(cur_z)
 
             if cache_fname is not None:
@@ -316,7 +392,7 @@ def execute_emmet(
 
     print(f"Deltas successfully computed for {list(weights.keys())}")
 
-    return deltas
+    return deltas, z_norms
 
 
 def calculate_distances(original_weights, new_weights, edit_keys, edit_values, preserved_keys):

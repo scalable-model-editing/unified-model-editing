@@ -5,6 +5,7 @@ from time import time
 from typing import Tuple, Union
 import sys
 import os
+import random
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -148,7 +149,8 @@ def main(
     #    assert ds_name != "cf", f"{ds_name} does not support multiple edits"
 
     ds_class, ds_eval_method = DS_DICT[ds_name]
-    ds = ds_class(DATA_DIR, tok=tok, size=dataset_size_limit)
+    #ds = ds_class(DATA_DIR, tok=tok, size=dataset_size_limit)
+    ds = ds_class(DATA_DIR, tok=tok)
 
     # Get cache templates
     cache_template = None
@@ -179,8 +181,10 @@ def main(
     f = open(indices_filename)
     sampled_indices = json.load(f)
 
+    max_examples = min(dataset_size_limit, len(sampled_indices[args.sample_num]))
+
     # Iterate through dataset
-    for r, e in enumerate(range(0, len(sampled_indices[args.sample_num]), num_edits)):
+    for r, e in enumerate(range(0, max_examples, num_edits)):
         record_chunks = []
         for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
             datapoint = dataset.__getitem__(element_index)
@@ -334,9 +338,38 @@ def main(
             json.dump(glue_results, f, indent=4)
 
 
+        if not sequential:
+            # Restore original weights
+            with torch.no_grad():
+                for k, v in weights_copy.items():
+                    nethook.get_parameter(model, k)[...] = v.to("cuda")
+
+        print("Evaluation took", time() - start)
+
+        ## Saving model
+        if save_model and (r + 1) % save_interval == 0:
+            print("Model storage location provided at " + save_location)
+            model_save_folder = save_location + '/edits_' + str(r + 1)
+            os.makedirs(model_save_folder)
+            model.save_pretrained(model_save_folder)
+
+
+    # Iterate through dataset
+    for r, e in enumerate(range(0, max_examples, num_edits)):
+        record_chunks = []
+        for element_index in sampled_indices[args.sample_num][e: min(e+num_edits, len(sampled_indices[args.sample_num]))]:
+            datapoint = dataset.__getitem__(element_index)
+            record_chunks.append(datapoint)
+
+        case_result_template = str(run_dir / "{}_{}_edits-case_{}.json")
+
         # Evaluate new model
         start = time()
         for record in record_chunks:
+            #evaluate evaluate_ratio percentage of files in a batch
+            if args.evaluate_ratio < random.random():
+                continue
+
             out_file = Path(case_result_template.format(num_edits, r, record["case_id"]))
 
             with open(out_file, 'r+') as f:
@@ -366,22 +399,7 @@ def main(
                 f.seek(0)        # <--- should reset file position to the beginning.
                 json.dump(data, f, indent=4)
                 f.truncate()
-
-        if not sequential:
-            # Restore original weights
-            with torch.no_grad():
-                for k, v in weights_copy.items():
-                    nethook.get_parameter(model, k)[...] = v.to("cuda")
-
-        print("Evaluation took", time() - start)
-
-        ## Saving model
-        if save_model and (r + 1) % save_interval == 0:
-            print("Model storage location provided at " + save_location)
-            model_save_folder = save_location + '/edits_' + str(r + 1)
-            os.makedirs(model_save_folder)
-            model.save_pretrained(model_save_folder)
-        
+      
 
 def extract_model_original_weights(model, hparams):
     weights = {
@@ -456,7 +474,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name",
         choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B", "Llama-2-7b"],
-        default="gpt2-xl",
+        default="/data/akshat/models/gpt2-xl",
         help="Model to edit.",
         required=False,
     )
@@ -482,7 +500,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_size_limit",
         type=int,
-        default=None,
+        default=3000,
         help="Truncate CounterFact to first n records.",
     )
     parser.add_argument(
@@ -520,13 +538,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sequential",
         type=bool,
-        default=False,
+        default=True,
         help="If we want to do sequential editing or not",
     )
     parser.add_argument(
         "--downstream_eval_steps",
         type=int,
-        default=100,
+        default=5,
         help="If we want to do sequential editing or not",
     )
     parser.add_argument(
@@ -557,19 +575,27 @@ if __name__ == "__main__":
     parser.add_argument(
         "--downstream_tasks",
         type=str,
+        default='nli,sst,mmlu,mrpc,cola,rte',
         required=False,
     )
     parser.add_argument(
         "--number_of_few_shots",
         type=str,
-        default="-1",
+        default="4,4,4,4,4,4",
         required=False,
     )
     parser.add_argument(
         "--number_of_tests",
         type=int,
-        default=None,
+        default=100,
         required=False,
+    )
+    parser.add_argument(
+        "--evaluate_ratio",
+        type=float,
+        default=1,
+        required=False,
+        help='ratio of examples to evaluate from each batch'
     )
 
 

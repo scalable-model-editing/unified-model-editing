@@ -39,12 +39,13 @@ def apply_memit_to_model(
     :return: (1) the updated model, (2) an original copy of the weights that changed
     """
 
-    distances = {}
     weights_copy = {}
     if copy:
         model = deepcopy(model)
 
-    deltas = execute_memit(model, tok, requests, hparams, cache_template=cache_template)
+    deltas, z_norms = execute_memit(model, tok, requests, hparams, cache_template=cache_template)
+    distances = {}
+    distances['z_norms'] = z_norms
 
     with torch.no_grad():
         for w_name, (key_mat, val_mat, preservation_distance, new_edit_distance, old_edit_distance, inside_norms) in deltas.items():
@@ -60,6 +61,34 @@ def apply_memit_to_model(
 
             w[...] += upd_matrix.float()
 
+
+            #cap singular value to 11
+            sv_cap = 11
+            U, S, Vh = torch.linalg.svd(w[...], full_matrices=False) 
+            S_clipped = torch.clamp(S, max=sv_cap)
+            #w[...] =  U @ torch.diag(S_clipped) @ Vh
+
+            #rescale norm
+            new_weights_norm = torch.norm(w[...]).detach().cpu().item()
+            alpha = original_weights_norm/new_weights_norm
+            #w[...] *= alpha
+
+            #spectral normalization
+            gamma = 10.2656
+            _, S, _ = torch.linalg.svd(w[...], full_matrices=False)
+            spectral_norm = torch.max(S)
+            #w[...] = gamma * (w[...] / spectral_norm)
+
+
+            start = time.time()
+            _, svd_upd, _ = torch.linalg.svd(upd_matrix)
+            svd_upd = sorted(svd_upd.detach().cpu().tolist(), reverse=True)
+            
+            _, svd_final, _ = torch.linalg.svd(w[...])
+            svd_final = sorted(svd_final.detach().cpu().tolist(), reverse=True)
+            print('svd calculation time:', time.time() - start)
+
+
             #saving all distances
             layer = w_name.split('.')[2]
             temp_dict = {
@@ -69,7 +98,10 @@ def apply_memit_to_model(
                 'delta_norm': torch.norm(upd_matrix).detach().cpu().item(),
                 'new_weights_norm': torch.norm(w[...]).detach().cpu().item(),
                 'original_weights_norm': original_weights_norm,
-                'inside_norms': inside_norms
+                'inside_norms': inside_norms,
+                'alpha': alpha,
+                'svd_final': svd_final,
+                'svd_upd': svd_upd, 
             }
             distances[layer] = temp_dict
 
@@ -93,6 +125,7 @@ def execute_memit(
     """
 
     deltas = {}
+    z_norms = {}
 
     # Update target and print info
     requests = deepcopy(requests)
@@ -148,7 +181,7 @@ def execute_memit(
 
         # Compute k/v pair if not loaded from cache
         if not data_loaded:
-            cur_z = compute_z(
+            cur_z, delta_norm, init_norm = compute_z(
                 model,
                 tok,
                 request,
@@ -156,7 +189,7 @@ def execute_memit(
                 z_layer,
                 context_templates,
             )
-
+            z_norms[r_id] = {'delta': delta_norm, 'init_norm': init_norm, 'final_norm': cur_z.norm().item()}
             z_list.append(cur_z)
 
             if cache_fname is not None:
@@ -217,11 +250,11 @@ def execute_memit(
         )
 
         #add optimization hyper-parameters
-        if hparams.mom2_update_weight != 1:
-            cov *= hparams.mom2_update_weight
+        #if hparams.mom2_update_weight != 1:
+        #    cov *= hparams.mom2_update_weight
 
-        if hparams.update_norm_lambda != 0:
-            cov += hparams.update_norm_lambda * torch.eye(cov.shape[0], dtype=cov.dtype, device = cov.device)
+        #if hparams.update_norm_lambda != 0:
+        #    cov += hparams.update_norm_lambda * torch.eye(cov.shape[0], dtype=cov.dtype, device = cov.device)
 
 
 
@@ -239,7 +272,20 @@ def execute_memit(
 
         ###Layer distribution code
         resid = targets / (len(hparams.layers) - i)  # Distribute residual across layers
-        upd_matrix = resid @ adj_k.T
+        
+        C_eff = hparams.mom2_update_weight * cov + layer_ks @ layer_ks.T
+        C_eff_inv = torch.inverse(C_eff)
+      
+        #upd_matrix = resid @ adj_k.T
+        upd_matrix = resid @ layer_ks.T @ C_eff_inv
+
+        weight_name = f"{hparams.rewrite_module_tmp.format(layer)}.weight"
+        original_weights = weights[weight_name]
+        upd_matrix = upd_matrix_match_shape(upd_matrix, weights[weight_name].shape)
+
+        #mu = 1.0
+        #upd_matrix -= (mu / 2) * (original_weights.double().T @ cov @ C_eff_inv).T
+
 
         ##calculate_norms
         inside_norms = {
@@ -297,7 +343,7 @@ def execute_memit(
 
     print(f"Deltas successfully computed for {list(weights.keys())}")
 
-    return deltas
+    return deltas, z_norms
 
 
 def calculate_distances(original_weights, new_weights, edit_keys, edit_values, preserved_keys):
